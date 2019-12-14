@@ -10,8 +10,8 @@ int main()
 {
 	PxDefaultAllocator		gAllocator;
 	PxDefaultErrorCallback	gErrorCallback;
-	auto foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+	const auto foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 	
-	cout << "Hello CMake." << endl;
+	cout << "Hello CMake." << foundation << endl;
 	return 0;
 }
