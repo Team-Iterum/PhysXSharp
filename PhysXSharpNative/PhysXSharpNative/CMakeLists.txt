@@ -4,7 +4,9 @@
 cmake_minimum_required (VERSION 3.8)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-find_package(dlib REQUIRED)
+if(${PLATFORM} STREQUAL "LINUX")
+	find_package(dlib REQUIRED)
+endif()
 
 set(PHYSX_SDK "../../PhysX")
 
@@ -26,7 +28,10 @@ else()
 endif()
 
 # Add source to this project's executable.
-add_executable (PhysXSharpNative "PhysXSharpNative.cpp" "PhysXSharpNative.h")
+add_library (PhysXSharpNative SHARED "PhysXSharpNative.cpp" "PhysXSharpNative.h")
 
-
-target_link_libraries(PhysXSharpNative Threads::Threads  ${CMAKE_DL_LIBS})
+if(${PLATFORM} STREQUAL "LINUX")
+	target_link_libraries(PhysXSharpNative Threads::Threads  ${CMAKE_DL_LIBS})
+else()
+	target_link_libraries(PhysXSharpNative Threads::Threads)
+endif()
