@@ -21,6 +21,7 @@
 
 
 typedef void (*OverlapCallback)(long t1);
+typedef void (*ErrorCallbackFunc)(const char* message);
 
 struct APIVec3
 {
@@ -72,3 +73,20 @@ struct APIQuat
 typedef physx::PxOverlapBufferN<1000> OverlapBuffer;
 
 typedef std::shared_ptr<physx::PxGeometry> SharedPxGeometry;
+
+class ErrorCallback final : public physx::PxErrorCallback
+{
+private:
+	ErrorCallbackFunc callback;
+public:
+	explicit ErrorCallback(ErrorCallbackFunc func)
+	{
+		callback = func;
+	}
+	~ErrorCallback() = default;;
+
+	virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override
+	{
+		callback(message);
+	}
+};

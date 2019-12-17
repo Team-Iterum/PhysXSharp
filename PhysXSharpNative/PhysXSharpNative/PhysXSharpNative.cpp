@@ -20,11 +20,13 @@ refMapNonPtr(SharedPxGeometry);
 PxPhysics* gPhysics = nullptr;
 PxFoundation* gFoundation = nullptr;
 PxDefaultAllocator gAllocator;
-PxDefaultErrorCallback gErrorCallback;
 PxPvd* gPvd = nullptr;
 PxDefaultCpuDispatcher*	gDispatcher = nullptr;
 
+std::shared_ptr<ErrorCallback> gErrorCallback;
+
 PxMaterial* gMaterial	= nullptr;
+
 
 EXPORT void setControllerDirection(long ref, APIVec3 dir)
 {
@@ -105,7 +107,7 @@ EXPORT void destroyRigidDynamic(long ref)
 {
 	releaseMap(PxRigidDynamic, ref)
 }
-EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float height, float radius)
+EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
 {
 	const auto insertRef = refCountPxController++;
 	
@@ -114,6 +116,8 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 	desc.radius = radius;
 	desc.position = ToPxVec3d(pos);
 	desc.upDirection = ToPxVec3(up);
+	desc.stepOffset = stepOffset;
+	desc.material = gMaterial;
 	
 	const auto c = refPxControllerManagers[refScene]->createController(desc);
 	c->setUserData(reinterpret_cast<void*>(insertRef));
@@ -147,19 +151,19 @@ EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
 	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
 }
 
-EXPORT long createScene(APIVec3 gravity, int numThreads)
+EXPORT long createScene(APIVec3 gravity)
 {
 	const auto insertRef = refCountPxScene++;
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	sceneDesc.gravity = ToPxVec3(gravity);
 	
 	
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader	= PxDefaultSimulationFilterShader;
 	auto scene = gPhysics->createScene(sceneDesc);
 
-	auto controllerManager = PxCreateControllerManager(*scene);
+	auto controllerManager = PxCreateControllerManager(*scene, true);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
 	refPxScenes.insert({insertRef, scene});
 	
@@ -189,9 +193,11 @@ EXPORT long getSceneTimestamp(long ref)
 	return refPxScenes[ref]->getTimestamp();
 }
 
-EXPORT void initPhysics(bool isCreatePvd, int numThreads)
+EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func)
 {
-	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+	gErrorCallback = std::make_shared<ErrorCallback>(func);
+	
+	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
 
 	if(isCreatePvd)
 	{
