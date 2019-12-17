@@ -112,6 +112,8 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 	PxCapsuleControllerDesc desc;
 	desc.height = height;
 	desc.radius = radius;
+	desc.position = ToPxVec3d(pos);
+	desc.upDirection = ToPxVec3(up);
 	
 	const auto c = refPxControllerManagers[refScene]->createController(desc);
 	c->setUserData(reinterpret_cast<void*>(insertRef));
@@ -147,6 +149,8 @@ EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
 
 EXPORT long createScene(APIVec3 gravity, int numThreads)
 {
+	const auto insertRef = refCountPxScene++;
+	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
 	
@@ -155,6 +159,10 @@ EXPORT long createScene(APIVec3 gravity, int numThreads)
 	sceneDesc.filterShader	= PxDefaultSimulationFilterShader;
 	auto scene = gPhysics->createScene(sceneDesc);
 
+	auto controllerManager = PxCreateControllerManager(*scene);
+	refPxControllerManagers.insert({insertRef, controllerManager});;
+	refPxScenes.insert({insertRef, scene});
+	
 	PxPvdSceneClient* pvdClient = scene->getScenePvdClient();
 	if(pvdClient)
 	{
@@ -163,8 +171,6 @@ EXPORT long createScene(APIVec3 gravity, int numThreads)
 		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
 	}
 
-	insertMap(PxScene, scene);
-	
 	return insertRef;
 }
 
