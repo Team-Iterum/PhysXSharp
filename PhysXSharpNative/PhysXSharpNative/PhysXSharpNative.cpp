@@ -2,70 +2,158 @@
 //
 
 #include "PhysXSharpNative.h"
+#include <map>
 
 using namespace std;
 using namespace physx;
 
-EXPORT ErrorCallback* CreateErrorCallback(ErrorCallbackFunc func)
+// Reference lists
+refMap(PxControllerManager)
+refMap(PxController)
+refMap(PxRigidStatic)
+refMap(PxRigidDynamic)
+refMap(PxScene)
+refMapNonPtr(OverlapBuffer)
+refMapNonPtr(SharedPxGeometry);
+
+// Global
+PxPhysics* gPhysics = nullptr;
+PxFoundation* gFoundation = nullptr;
+PxDefaultAllocator gAllocator;
+PxDefaultErrorCallback gErrorCallback;
+PxPvd* gPvd = nullptr;
+PxDefaultCpuDispatcher*	gDispatcher = nullptr;
+
+PxMaterial* gMaterial	= nullptr;
+
+EXPORT void setControllerDirection(long ref, APIVec3 dir)
 {
-	const auto callback = std::make_shared<ErrorCallback>(func);
-	return callback.get(); 
+	refPxControllers[ref]->setUpDirection(ToPxVec3(dir));
 }
 
-EXPORT PxDefaultAllocator* CreateDefaultAllocator()
+EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback callback)
 {
-	return nullptr;
-}
-
-
-EXPORT PxVec3* CreateVec3(float x, float y, float z)
-{
-	const auto vec = std::make_shared<PxVec3>(x, y,z);
-	return vec.get();
-}
-
-EXPORT void SetVec3(PxVec3* vec3, float x, float y, float z)
-{
-	vec3->x = x;
-	vec3->y = y;
-	vec3->z = z;
-}
-
-EXPORT PxFoundation* CreateFoundation(ErrorCallback* errorCallback, PxDefaultAllocator* allocator)
-{
-
-	return PxCreateFoundation(PX_PHYSICS_VERSION, *allocator, *errorCallback);
-}
-
-EXPORT PxPvd* CreatePvd(PxFoundation* foundation, const char* host)
-{
-
-	auto gPvd = PxCreatePvd(*foundation);
-	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(host, 5425, 10);
-	gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
-
-	return gPvd;
-}
-
-EXPORT PxPhysics* CreatePhysics(PxFoundation* foundation, PxPvd* pvd)
-{
-	return PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale(),true, pvd);
-}
-
-EXPORT PxSceneDesc* CreateSceneDesc(PxPhysics* physics, PxVec3 gravity, PxCpuDispatcher* cpuDispatcher)
-{
-	auto sceneDesc = std::make_shared<PxSceneDesc>(physics->getTolerancesScale());
 	
-	sceneDesc->gravity = gravity;
-	sceneDesc->cpuDispatcher	= cpuDispatcher;
-	sceneDesc->filterShader	= PxDefaultSimulationFilterShader;
+	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), refOverlapBuffers[refScene]);
+	const auto count = refOverlapBuffers[refScene].getNbTouches();
+	for (PxU32 i = 0; i < count; ++i)
+	{
+		const auto touch = refOverlapBuffers[refScene].getTouch(i);
+	 	const auto ref = reinterpret_cast<long>(touch.actor->userData);
+		
+		callback(ref);
+	}
 
-	return sceneDesc.get();
+	return count;
+	
+}
+EXPORT long createSphereGeometry(float radius)
+{
+	const SharedPxGeometry geo = std::make_shared<PxSphereGeometry>(radius);
+	insertMapNoUserData(SharedPxGeometry, geo);
+	return insertRef;
+}
+EXPORT long createBoxGeometry(APIVec3 half)
+{
+	const auto geo = std::make_shared<PxBoxGeometry>(ToPxVec3(half));
+	insertMapNoUserData(SharedPxGeometry, geo);
+
+	return insertRef;
+}
+EXPORT void cleanupGeometry(long ref)
+{
+	refSharedPxGeometrys.erase(ref);
+}
+EXPORT long createRigidStatic(long refGeo, long refScene, APIVec3 pos, APIQuat quat)
+{
+	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), ToQuat(quat)));
+
+	insertMap(PxRigidStatic, rigid);
+
+	return insertRef;
+}
+EXPORT void destroyRigidStatic(long ref)
+{
+	releaseMap(PxRigidStatic, ref)
 }
 
-EXPORT PxScene* CreateScene(PxPhysics* physics, PxSceneDesc* desc)
-{	
-	auto scene = physics->createScene(*desc);
+EXPORT APIVec3 getRigidStaticPosition(long ref)
+{
+ 	return ToVec3(refPxRigidStatics[ref]->getGlobalPose().p);
+}
+
+EXPORT APIQuat getRigidStaticRotation(long ref)
+{
+	return ToQuat(refPxRigidStatics[ref]->getGlobalPose().q);
+}
+EXPORT void setRigidStaticPosition(long ref, APIVec3 p)
+{
+	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToPxVec3(p)));
+}
+EXPORT void setRigidStaticRotation(long ref, APIQuat q)
+{
+	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToQuat(q)));	
+}
+EXPORT long createRigidDynamic(APIVec3 pos, APIQuat quat)
+{
+	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToVec3(pos), ToQuat(quat)));
+	insertMap(PxRigidDynamic, rigid)
+
+	return insertRef;
+}
+EXPORT void destroyRigidDynamic(long ref)
+{
+	releaseMap(PxRigidDynamic, ref)
+}
+EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float height, float radius)
+{
+	const auto insertRef = refCountPxController++;
+	
+	PxCapsuleControllerDesc desc;
+	desc.height = height;
+	desc.radius = radius;
+	
+	const auto c = refPxControllerManagers[refScene]->createController(desc);
+	c->setUserData(reinterpret_cast<void*>(insertRef));
+	
+	refPxControllers.insert({insertRef, c});;
+
+	return insertRef;
+}
+EXPORT void destroyController(long ref)
+{
+	releaseMap(PxController, ref);
+}
+
+EXPORT APIDoubleVec3 getControllerPosition(long ref)
+{
+	return ToVec3d(refPxControllers[ref]->getPosition());
+}
+
+EXPORT APIDoubleVec3 getControllerFootPosition(long ref)
+{
+	return ToVec3d(refPxControllers[ref]->getFootPosition());
+}
+
+EXPORT void setControllerPosition(long ref, APIDoubleVec3 p)
+{
+	refPxControllers[ref]->setPosition(ToPxVec3d(p));
+}
+
+EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
+{
+	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
+}
+
+EXPORT long createScene(APIVec3 gravity, int numThreads)
+{
+	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	
+	
+	sceneDesc.cpuDispatcher	= gDispatcher;
+	sceneDesc.filterShader	= PxDefaultSimulationFilterShader;
+	auto scene = gPhysics->createScene(sceneDesc);
 
 	PxPvdSceneClient* pvdClient = scene->getScenePvdClient();
 	if(pvdClient)
@@ -74,17 +162,56 @@ EXPORT PxScene* CreateScene(PxPhysics* physics, PxSceneDesc* desc)
 		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
 		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
 	}
+
+	insertMap(PxScene, scene);
 	
-	return scene;
+	return insertRef;
 }
 
-EXPORT PxCpuDispatcher* CreateCpuDispatcher(int numThreads)
+EXPORT void stepPhysics(long ref, float dt)
 {
-	return PxDefaultCpuDispatcherCreate(numThreads);
+	refPxScenes[ref]->simulate(dt);
+	refPxScenes[ref]->fetchResults(true);
 }
 
-EXPORT PxMaterial* CreateMaterial(PxPhysics* physics, float staticFriction, float dynamicFriction, float restitution)
+EXPORT void cleanupScene(long ref)
 {
-	return physics->createMaterial(staticFriction, dynamicFriction, restitution);
+	releaseMap(PxScene, ref)
+}
+EXPORT long getSceneTimestamp(long ref)
+{
+	return refPxScenes[ref]->getTimestamp();
 }
 
+EXPORT void initPhysics(bool isCreatePvd, int numThreads)
+{
+	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+
+	if(isCreatePvd)
+	{
+		gPvd = PxCreatePvd(*gFoundation);
+		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+		gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
+	}
+
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(),true,gPvd);
+
+	gDispatcher = PxDefaultCpuDispatcherCreate(numThreads);
+
+	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+	
+}
+EXPORT void cleanupPhysics()
+{
+	PX_RELEASE(gPhysics);
+	if(gPvd)
+	{
+		PxPvdTransport* transport = gPvd->getTransport();
+
+		gPvd->release();
+		gPvd = nullptr;
+		
+		PX_RELEASE(transport);
+	}
+	PX_RELEASE(gFoundation);
+}
