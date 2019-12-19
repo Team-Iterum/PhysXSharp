@@ -3,15 +3,18 @@
 
 #include "PhysXSharpNative.h"
 #include <map>
+#include <thread>
 
 using namespace std;
 using namespace physx;
 
 // Reference lists
 refMap(PxControllerManager)
-refMap(PxController)
-refMap(PxRigidStatic)
-refMap(PxRigidDynamic)
+long refOverlap;
+map<long, PxController*> refPxControllers;
+map<long, PxVec3> refControllersDir; 
+map<long, PxRigidStatic*> refPxRigidStatics;
+map<long, PxRigidDynamic*> refPxRigidDynamics;
 refMap(PxScene)
 refMapNonPtr(OverlapBuffer)
 refMapNonPtr(SharedPxGeometry);
@@ -27,26 +30,41 @@ std::shared_ptr<ErrorCallback> gErrorCallback;
 
 PxMaterial* gMaterial	= nullptr;
 
+//shared_ptr<thread> charactersUpdate;
+
+EXPORT void charactersUpdate(float elapsed, float minDist)
+{
+	/*charactersUpdate = make_shared<thread>([=]
+	{
+		while(true)
+		{
+			
+		}
+	});*/
+}
+
 
 EXPORT void setControllerDirection(long ref, APIVec3 dir)
 {
-	refPxControllers[ref]->setUpDirection(ToPxVec3(dir));
+	refControllersDir[ref] = ToPxVec3(dir);
 }
 
 EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback callback)
 {
+
+	PxOverlapBufferN<1000> buffer;
 	
-	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), refOverlapBuffers[refScene]);
-	const auto count = refOverlapBuffers[refScene].getNbTouches();
-	for (PxU32 i = 0; i < count; ++i)
+	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer, PxQueryFilterData(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC));
+	
+	for (PxU32 i = 0; i < buffer.nbTouches; ++i)
 	{
-		const auto touch = refOverlapBuffers[refScene].getTouch(i);
+		const auto touch = buffer.touches[i];
 	 	const auto ref = reinterpret_cast<long>(touch.actor->userData);
 		
 		callback(ref);
 	}
 
-	return count;
+	return buffer.nbTouches;
 	
 }
 EXPORT long createSphereGeometry(float radius)
@@ -69,14 +87,24 @@ EXPORT void cleanupGeometry(long ref)
 EXPORT long createRigidStatic(long refGeo, long refScene, APIVec3 pos, APIQuat quat)
 {
 	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), ToQuat(quat)));
+	PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo], *gMaterial);
+	
+	const auto insertRef = refOverlap++;
+	refPxRigidStatics.insert({insertRef, rigid});
+	rigid->userData = reinterpret_cast<void*>(insertRef);;
 
-	insertMap(PxRigidStatic, rigid);
-
+	refPxScenes[refScene]->addActor(*rigid);
+	
 	return insertRef;
 }
 EXPORT void destroyRigidStatic(long ref)
 {
-	releaseMap(PxRigidStatic, ref)
+	const auto actor = refPxRigidStatics[ref];
+	actor->getScene()->removeActor(*actor);
+	
+	refPxRigidStatics[ref]->release();
+	refPxRigidStatics[ref] = nullptr;
+	refPxRigidStatics.erase(ref);
 }
 
 EXPORT APIVec3 getRigidStaticPosition(long ref)
@@ -96,20 +124,30 @@ EXPORT void setRigidStaticRotation(long ref, APIQuat q)
 {
 	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToQuat(q)));	
 }
-EXPORT long createRigidDynamic(APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(long refGeo, long refScene, APIVec3 pos, APIQuat quat)
 {
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToVec3(pos), ToQuat(quat)));
-	insertMap(PxRigidDynamic, rigid)
+	PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo], *gMaterial);
+	
+	const auto insertRef = refOverlap++;
+	refPxRigidDynamics.insert({insertRef, rigid});
+	rigid->userData = reinterpret_cast<void*>(insertRef);
 
+	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
 }
 EXPORT void destroyRigidDynamic(long ref)
 {
-	releaseMap(PxRigidDynamic, ref)
+	const auto actor = refPxRigidDynamics[ref];
+	actor->getScene()->removeActor(*actor);
+	
+	refPxRigidDynamics[ref]->release();
+	refPxRigidDynamics[ref] = nullptr;
+	refPxRigidDynamics.erase(ref);
 }
 EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
 {
-	const auto insertRef = refCountPxController++;
+	const auto insertRef = refOverlap++;
 	
 	PxCapsuleControllerDesc desc;
 	desc.height = height;
@@ -123,6 +161,7 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 	c->setUserData(reinterpret_cast<void*>(insertRef));
 	
 	refPxControllers.insert({insertRef, c});;
+	refControllersDir.insert({insertRef, PxVec3(0, 0, 0)});
 
 	return insertRef;
 }
@@ -182,6 +221,11 @@ EXPORT void stepPhysics(long ref, float dt)
 {
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
+
+	for (auto pair : refPxControllers)
+	{
+		pair.second->move(refControllersDir[pair.first], 0.01f, dt, PxControllerFilters());
+	}
 }
 
 EXPORT void cleanupScene(long ref)
@@ -202,7 +246,7 @@ EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func
 	if(isCreatePvd)
 	{
 		gPvd = PxCreatePvd(*gFoundation);
-		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
 		gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
 	}
 

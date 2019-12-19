@@ -70,7 +70,7 @@ struct APIQuat
 
 
 
-typedef physx::PxOverlapBufferN<1000> OverlapBuffer;
+typedef physx::PxOverlapBuffer OverlapBuffer;
 
 typedef std::shared_ptr<physx::PxGeometry> SharedPxGeometry;
 
