@@ -34,13 +34,10 @@ PxMaterial* gMaterial	= nullptr;
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
 {
-	/*charactersUpdate = make_shared<thread>([=]
+	for (auto pair : refPxControllers)
 	{
-		while(true)
-		{
-			
-		}
-	});*/
+		pair.second->move(refControllersDir[pair.first], 0.05f, elapsed, PxControllerFilters());
+	}
 }
 
 
@@ -54,7 +51,7 @@ EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback
 
 	PxOverlapBufferN<1000> buffer;
 	
-	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer, PxQueryFilterData(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC));
+	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
 	
 	for (PxU32 i = 0; i < buffer.nbTouches; ++i)
 	{
@@ -159,6 +156,8 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 	
 	const auto c = refPxControllerManagers[refScene]->createController(desc);
 	c->setUserData(reinterpret_cast<void*>(insertRef));
+	c->getActor()->userData = reinterpret_cast<void*>(insertRef);
+	
 	
 	refPxControllers.insert({insertRef, c});;
 	refControllersDir.insert({insertRef, PxVec3(0, 0, 0)});
@@ -202,7 +201,7 @@ EXPORT long createScene(APIVec3 gravity)
 	sceneDesc.filterShader	= PxDefaultSimulationFilterShader;
 	auto scene = gPhysics->createScene(sceneDesc);
 
-	auto controllerManager = PxCreateControllerManager(*scene, true);
+	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
 	refPxScenes.insert({insertRef, scene});
 	
@@ -221,11 +220,6 @@ EXPORT void stepPhysics(long ref, float dt)
 {
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
-
-	for (auto pair : refPxControllers)
-	{
-		pair.second->move(refControllersDir[pair.first], 0.01f, dt, PxControllerFilters());
-	}
 }
 
 EXPORT void cleanupScene(long ref)
