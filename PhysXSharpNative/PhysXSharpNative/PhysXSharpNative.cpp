@@ -12,10 +12,12 @@ using namespace physx;
 // Reference lists
 refMap(PxControllerManager)
 long refOverlap;
+
 map<long, PxController*> refPxControllers;
 map<long, PxVec3> refControllersDir; 
 map<long, PxRigidStatic*> refPxRigidStatics;
 map<long, PxRigidDynamic*> refPxRigidDynamics;
+
 refMap(PxScene)
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
@@ -36,6 +38,8 @@ PxMaterial* gMaterial	= nullptr;
 
 std::mutex step_mutex;
 #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
+
+
 PxOverlapBufferN<1000> buffer;
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
@@ -130,7 +134,7 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 // Setup common cooking params
 void setupCommonCookingParams(PxCookingParams& params, bool skipMeshCleanup, bool skipEdgeData)
 {
-		// we suppress the triangle mesh remap table computation to gain some speed, as we will not need it 
+    // we suppress the triangle mesh remap table computation to gain some speed, as we will not need it 
 	// in this snippet
 	params.suppressTriangleMeshRemapTable = true;
 
@@ -238,7 +242,7 @@ EXPORT long createTriangleMesh(APIVec3 vertices[], int pointsCount, uint32_t ind
 	
 	const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
 	
-	return createBV33TriangleMesh(pointsCount,verticesPx,triCount,indices, false, false, true, true, false);
+	return createBV33TriangleMesh(pointsCount, verticesPx,triCount, indices, false, false, true, false, true);
 }
 
 EXPORT long createConvexMesh(APIVec3 vertices[], int pointsCount)
@@ -396,7 +400,12 @@ EXPORT void setRigidDynamicMaxLinearVelocity(long ref, float v)
 	
 	refPxRigidDynamics[ref]->setMaxLinearVelocity(v);
 }
-
+EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
+{
+	lock_step()
+	
+	refPxRigidDynamics[ref]->setMaxAngularVelocity(v);
+}
 
 // get
 EXPORT APIVec3 getRigidDynamicPosition(long ref, APIVec3 p)
@@ -426,7 +435,6 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
 	rigid->setMass(mass);
-	rigid->setAngularDamping(1000);
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
