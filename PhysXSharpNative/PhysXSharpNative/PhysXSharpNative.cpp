@@ -9,6 +9,9 @@
 using namespace std;
 using namespace physx;
 
+DebugLogFunc debugLog;
+DebugLogErrorFunc debugLogError;
+
 // Reference lists
 refMap(PxControllerManager)
 long refOverlap;
@@ -381,6 +384,8 @@ EXPORT void setRigidDynamicRotation(long ref, APIQuat q)
 	auto const globePos = refPxRigidDynamics[ref]->getGlobalPose();
 	refPxRigidDynamics[ref]->setGlobalPose(PxTransform(globePos.p, ToQuat(q)));	
 }
+
+
 EXPORT void setRigidDynamicKinematicTarget(long ref, APIVec3 p, APIQuat q)
 {
 	lock_step()
@@ -394,6 +399,14 @@ EXPORT void setRigidDynamicLinearVelocity(long ref, APIVec3 v)
 	
 	refPxRigidDynamics[ref]->setLinearVelocity(ToPxVec3(v), true);
 }
+EXPORT void setRigidDynamicAngularVelocity(long ref, APIVec3 v)
+{
+	lock_step()
+	
+	refPxRigidDynamics[ref]->setAngularVelocity(ToPxVec3(v), true);
+}
+
+
 EXPORT void setRigidDynamicMaxLinearVelocity(long ref, float v)
 {
 	lock_step()
@@ -408,17 +421,42 @@ EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
 }
 
 // get
-EXPORT APIVec3 getRigidDynamicPosition(long ref, APIVec3 p)
+EXPORT APIVec3 getRigidDynamicPosition(long ref)
 {
 	lock_step()
 
 	return ToVec3(refPxRigidDynamics[ref]->getGlobalPose().p);
 }
-EXPORT APIQuat getRigidDynamicRotation(long ref, APIQuat q)
+EXPORT APIQuat getRigidDynamicRotation(long ref)
 {
 	lock_step()
 
 	return ToQuat(refPxRigidDynamics[ref]->getGlobalPose().q);
+}
+
+EXPORT APIVec3 getRigidDynamicAngularVelocity(long ref)
+{
+	lock_step()
+
+	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
+}
+EXPORT APIVec3 getRigidDynamicLinearVelocity(long ref)
+{
+	lock_step()
+
+	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
+}
+EXPORT float getRigidDynamicMaxAngularVelocity(long ref)
+{
+	lock_step()
+
+	return refPxRigidDynamics[ref]->getMaxAngularVelocity();
+}
+EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
+{
+	lock_step()
+
+	return refPxRigidDynamics[ref]->getMaxLinearVelocity();
 }
 
 
@@ -553,8 +591,16 @@ EXPORT long getSceneTimestamp(long ref)
 	return refPxScenes[ref]->getTimestamp();
 }
 
+EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
+{
+	debugLog = func;
+	debugLogError = func2;
+}
+
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func)
 {
+	debugLog("init physics native library");
+	
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
