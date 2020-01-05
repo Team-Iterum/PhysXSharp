@@ -5,6 +5,7 @@
 #include <map>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 using namespace std;
 using namespace physx;
@@ -44,6 +45,8 @@ std::mutex step_mutex;
 
 
 PxOverlapBufferN<1000> buffer;
+
+std::thread workerThread;
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
 {
@@ -577,9 +580,51 @@ EXPORT long createScene(APIVec3 gravity)
 
 EXPORT void stepPhysics(long ref, float dt)
 {
-	lock_step();
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
+
+//	bool isRunning = true;
+//	debugLog("start thread...");
+//	workerThread = std::thread([=]
+//	{
+//	  try
+//	  {
+//		  long t = 0.0;
+//		  const long dt = 30000;
+//
+//		  auto currentTime = std::chrono::high_resolution_clock::now();
+//		  long accumulator = 0.0;
+//
+//		  debugLog("before while");
+//
+//		  while (isRunning)
+//		  {
+//			  auto newTime = std::chrono::high_resolution_clock::now();
+//			  long frameTime = std::chrono::duration_cast<std::chrono::microseconds>(newTime - currentTime).count();
+//			  currentTime = newTime;
+//
+//			  accumulator += frameTime;
+//
+//			  while (accumulator >= dt)
+//			  {
+//				  lock_step()
+//
+//				  refPxScenes[ref]->simulate(static_cast<float>(dt / 1e+6));
+//				  refPxScenes[ref]->fetchResults(true);
+//
+//				  accumulator -= dt;
+//				  t += dt;
+//			  }
+//		  }
+//	  }
+//	  catch(std::exception ex)
+//	  {
+//	  	debugLogError(ex.what());
+//	  }
+//
+//	});
+//	debugLog("started thread");
+
 }
 
 EXPORT void cleanupScene(long ref)
