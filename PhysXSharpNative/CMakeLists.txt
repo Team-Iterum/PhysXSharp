@@ -8,4 +8,3 @@ project ("PhysXSharpNative")
 # Include sub-projects.
 add_subdirectory ("PhysXSharpNative")
 
-

@@ -169,7 +169,7 @@ long createBV33TriangleMesh(PxU32 numVertices, const PxVec3* vertices, PxU32 num
                                        bool skipMeshCleanup, bool skipEdgeData, bool inserted, bool cookingPerformance,
                                        bool meshSizePerfTradeoff)
 {
-	
+
 	PxTriangleMeshDesc meshDesc;
 	meshDesc.points.count = numVertices;
 	meshDesc.points.data = vertices;
@@ -245,19 +245,31 @@ long createBV33TriangleMesh(PxU32 numVertices, const PxVec3* vertices, PxU32 num
 EXPORT long createTriangleMesh(APIVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
 {
 	lock_step()
-	
-	const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
-	
-	return createBV33TriangleMesh(pointsCount, verticesPx,triCount, indices, false, false, true, false, true);
+
+	try
+	{
+		const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
+		return createBV33TriangleMesh(pointsCount, verticesPx, triCount, indices, false, false, true, false, true);
+	}
+	catch(std::exception ex)
+	{
+		debugLogError(ex.what());
+	}
 }
 
 EXPORT long createConvexMesh(APIVec3 vertices[], int pointsCount)
 {
 	lock_step()
-	
-	const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
-	
-	return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
+
+	try
+	{
+		const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
+		return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
+	}
+	catch(std::exception ex)
+	{
+		debugLogError(ex.what());
+	}
 }
 EXPORT void cleanupTriangleMesh(long ref)
 {
@@ -582,49 +594,6 @@ EXPORT void stepPhysics(long ref, float dt)
 {
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
-
-//	bool isRunning = true;
-//	debugLog("start thread...");
-//	workerThread = std::thread([=]
-//	{
-//	  try
-//	  {
-//		  long t = 0.0;
-//		  const long dt = 30000;
-//
-//		  auto currentTime = std::chrono::high_resolution_clock::now();
-//		  long accumulator = 0.0;
-//
-//		  debugLog("before while");
-//
-//		  while (isRunning)
-//		  {
-//			  auto newTime = std::chrono::high_resolution_clock::now();
-//			  long frameTime = std::chrono::duration_cast<std::chrono::microseconds>(newTime - currentTime).count();
-//			  currentTime = newTime;
-//
-//			  accumulator += frameTime;
-//
-//			  while (accumulator >= dt)
-//			  {
-//				  lock_step()
-//
-//				  refPxScenes[ref]->simulate(static_cast<float>(dt / 1e+6));
-//				  refPxScenes[ref]->fetchResults(true);
-//
-//				  accumulator -= dt;
-//				  t += dt;
-//			  }
-//		  }
-//	  }
-//	  catch(std::exception ex)
-//	  {
-//	  	debugLogError(ex.what());
-//	  }
-//
-//	});
-//	debugLog("started thread");
-
 }
 
 EXPORT void cleanupScene(long ref)
@@ -644,7 +613,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func)
 {
-	debugLog("init physics native library");
+	debugLog("init physics native library #1");
 	
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
