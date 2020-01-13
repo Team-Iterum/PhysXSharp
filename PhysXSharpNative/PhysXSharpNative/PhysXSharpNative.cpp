@@ -249,7 +249,7 @@ EXPORT long createTriangleMesh(APIVec3 vertices[], int pointsCount, uint32_t ind
 	try
 	{
 		const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
-		return createBV33TriangleMesh(pointsCount, verticesPx, triCount, indices, false, false, true, false, true);
+		return createBV33TriangleMesh(pointsCount, verticesPx, triCount, indices, false, false, true, false, false);
 	}
 	catch(std::exception ex)
 	{
@@ -291,8 +291,11 @@ EXPORT void cleanupConvexMesh(long ref)
 
 EXPORT long createBoxGeometry(APIVec3 half)
 {
+	lock_step()
+
 	const auto geo = std::make_shared<PxBoxGeometry>(ToPxVec3(half));
-	insertMapNoUserData(SharedPxGeometry, geo);
+	const auto insertRef = refCountSharedPxGeometry++;
+  	refSharedPxGeometrys.insert({insertRef, geo});
 
 	return insertRef;
 }
@@ -386,18 +389,11 @@ EXPORT void setRigidStaticRotation(long ref, APIQuat q)
 
 /// RIGID DYNAMIC
 // set
-EXPORT void setRigidDynamicPosition(long ref, APIVec3 p)
+EXPORT void setRigidDynamicTransform(long ref, APIVec3 pos, APIQuat q)
 {
 	lock_step()
 
-	auto const globePos = refPxRigidDynamics[ref]->getGlobalPose();
-	refPxRigidDynamics[ref]->setGlobalPose(PxTransform(ToPxVec3(p), globePos.q));
-}
-EXPORT void setRigidDynamicRotation(long ref, APIQuat q)
-{
-	lock_step()
-	auto const globePos = refPxRigidDynamics[ref]->getGlobalPose();
-	refPxRigidDynamics[ref]->setGlobalPose(PxTransform(globePos.p, ToQuat(q)));	
+	refPxRigidDynamics[ref]->setGlobalPose(PxTransform(ToVec3(pos), ToQuat(q)));
 }
 
 
@@ -413,6 +409,34 @@ EXPORT void setRigidDynamicLinearVelocity(long ref, APIVec3 v)
 	lock_step()
 	
 	refPxRigidDynamics[ref]->setLinearVelocity(ToPxVec3(v), true);
+}
+
+EXPORT void setRigidDynamicLinearDamping(long ref, float v)
+{
+	lock_step()
+
+	refPxRigidDynamics[ref]->setLinearDamping(v);
+}
+
+EXPORT void setRigidDynamicAngularDamping(long ref, float v)
+{
+	lock_step()
+
+	refPxRigidDynamics[ref]->setAngularDamping(v);
+}
+
+EXPORT void addRigidDynamicForce(long ref, APIVec3 v)
+{
+	lock_step()
+
+	refPxRigidDynamics[ref]->addForce(ToPxVec3(v), PxForceMode::eVELOCITY_CHANGE);
+}
+
+EXPORT void addRigidDynamicTorque(long ref, APIVec3 v)
+{
+	lock_step()
+
+	refPxRigidDynamics[ref]->addTorque(ToPxVec3(v), PxForceMode::eVELOCITY_CHANGE);
 }
 EXPORT void setRigidDynamicAngularVelocity(long ref, APIVec3 v)
 {
@@ -592,6 +616,8 @@ EXPORT long createScene(APIVec3 gravity)
 
 EXPORT void stepPhysics(long ref, float dt)
 {
+	lock_step()
+
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
 }
@@ -619,7 +645,11 @@ EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func
 	
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
 
-	gCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(PxTolerancesScale()));
+	PxTolerancesScale scale;
+	scale.length = 100;        // typical length of an object
+	scale.speed = 1000;        // typical speed of an object, gravity*1s is a reasonable choice
+
+	gCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
 		
 	if(isCreatePvd)
 	{
@@ -628,13 +658,16 @@ EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func
 		gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
 	}
 
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(),true,gPvd);
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale,true,gPvd);
 
 	gDispatcher = PxDefaultCpuDispatcherCreate(numThreads);
-
-	gMaterial = gPhysics->createMaterial(0.5f, 0.05f, 0.01f);
 	
 }
+EXPORT void initGlobalMaterial(float staticFriction, float dynamicFriction, float restitution)
+{
+	gMaterial = gPhysics->createMaterial(staticFriction, dynamicFriction, restitution);
+}
+
 EXPORT void cleanupPhysics()
 {
 	PX_RELEASE(gPhysics);
