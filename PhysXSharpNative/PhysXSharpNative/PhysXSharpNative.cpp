@@ -6,12 +6,33 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <fstream>
+#include <vector>
 
 using namespace std;
 using namespace physx;
 
 DebugLogFunc debugLog;
 DebugLogErrorFunc debugLogError;
+
+void AssertError(const char* exp, const char* file, int line, bool& ignore)
+{
+	std::stringstream oss;
+	oss << "Assert: " << exp;
+	oss << " " << file << ":" << std::to_string(line);
+
+	debugLogError(oss.str().c_str());
+}
+#define PXS_ASSERT(exp)                                                                                           \
+		{                                                                                                        \
+			static bool _ignore = false;                                                                         \
+			((void)((!!(exp)) || (!_ignore && (AssertError(#exp, __FILE__, __LINE__, _ignore), false))));      \
+			__analysis_assume(!!(exp))                                                                           \
+		}
 
 // Reference lists
 refMap(PxControllerManager)
@@ -115,7 +136,7 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 	{
 		// Directly insert mesh into PhysX
 		convex = gCooking->createConvexMesh(desc, gPhysics->getPhysicsInsertionCallback());
-		PX_ASSERT(convex);
+		PXS_ASSERT(convex);
 	}
 	else
 	{
@@ -123,13 +144,13 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 		PxDefaultMemoryOutputStream outStream;
 		bool res = gCooking->cookConvexMesh(desc, outStream);
 		PX_UNUSED(res);
-		PX_ASSERT(res);
+		PXS_ASSERT(res);
 		meshSize = outStream.getSize();
 
 		// Create the mesh from a stream.
 		PxDefaultMemoryInputData inStream(outStream.getData(), outStream.getSize());
 		convex = gPhysics->createConvexMesh(inStream);
-		PX_ASSERT(convex);
+		PXS_ASSERT(convex);
 	}
 
 	insertMapNoUserData(PxConvexMesh, convex);
@@ -137,39 +158,8 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 	return insertRef;
 }
 
-// Setup common cooking params
-void setupCommonCookingParams(PxCookingParams& params, bool skipMeshCleanup, bool skipEdgeData)
+void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* vertices, PxU32 numTriangles, const PxU32* indices)
 {
-    // we suppress the triangle mesh remap table computation to gain some speed, as we will not need it 
-	// in this snippet
-	params.suppressTriangleMeshRemapTable = true;
-
-	// If DISABLE_CLEAN_MESH is set, the mesh is not cleaned during the cooking. The input mesh must be valid. 
-	// The following conditions are true for a valid triangle mesh :
-	//  1. There are no duplicate vertices(within specified vertexWeldTolerance.See PxCookingParams::meshWeldTolerance)
-	//  2. There are no large triangles(within specified PxTolerancesScale.)
-	// It is recommended to run a separate validation check in debug/checked builds, see below.
-
-	if (!skipMeshCleanup)
-		params.meshPreprocessParams &= ~static_cast<PxMeshPreprocessingFlags>(PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH);
-	else
-		params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
-
-	// If DISABLE_ACTIVE_EDGES_PREDOCOMPUTE is set, the cooking does not compute the active (convex) edges, and instead 
-	// marks all edges as active. This makes cooking faster but can slow down contact generation. This flag may change 
-	// the collision behavior, as all edges of the triangle mesh will now be considered active.
-	if (!skipEdgeData)
-		params.meshPreprocessParams &= ~static_cast<PxMeshPreprocessingFlags>(PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE);
-	else
-		params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
-}
-
-long createBV33TriangleMesh(PxU32 numVertices, const PxVec3* vertices, PxU32 numTriangles,
-                                       const PxU32* indices,
-                                       bool skipMeshCleanup, bool skipEdgeData, bool inserted, bool cookingPerformance,
-                                       bool meshSizePerfTradeoff)
-{
-
 	PxTriangleMeshDesc meshDesc;
 	meshDesc.points.count = numVertices;
 	meshDesc.points.data = vertices;
@@ -180,96 +170,43 @@ long createBV33TriangleMesh(PxU32 numVertices, const PxVec3* vertices, PxU32 num
 
 	PxCookingParams params = gCooking->getParams();
 
-	// Create BVH33 midphase
 	params.midphaseDesc = PxMeshMidPhase::eBVH33;
-
-	// setup common cooking params
-	setupCommonCookingParams(params, skipMeshCleanup, skipEdgeData);
-
-	// The COOKING_PERFORMANCE flag for BVH33 midphase enables a fast cooking path at the expense of somewhat lower quality BVH construction.	
-	if (cookingPerformance)
-		params.midphaseDesc.mBVH33Desc.meshCookingHint = PxMeshCookingHint::eCOOKING_PERFORMANCE;
-	else
-		params.midphaseDesc.mBVH33Desc.meshCookingHint = PxMeshCookingHint::eSIM_PERFORMANCE;
-
-	// If meshSizePerfTradeoff is set to true, smaller mesh cooked mesh is produced. The mesh size/performance trade-off
-	// is controlled by setting the meshSizePerformanceTradeOff from 0.0f (smaller mesh) to 1.0f (larger mesh).
-	if(meshSizePerfTradeoff)
-	{
-		params.midphaseDesc.mBVH33Desc.meshSizePerformanceTradeOff = 0.0f;
-	}
-	else
-	{
-		// using the default value
-		params.midphaseDesc.mBVH33Desc.meshSizePerformanceTradeOff = 0.55f;
-	}
+	params.midphaseDesc.mBVH33Desc.meshCookingHint = PxMeshCookingHint::eCOOKING_PERFORMANCE;
 
 	gCooking->setParams(params);
 
-#if defined(PX_CHECKED) || defined(PX_DEBUG)
-	// If DISABLE_CLEAN_MESH is set, the mesh is not cleaned during the cooking. 
-	// We should check the validity of provided triangles in debug/checked builds though.
-	if (skipMeshCleanup)
-	{
-		PX_ASSERT(gCooking->validateTriangleMesh(meshDesc));
-	}
-#endif // DEBUG
-
-
 	PxTriangleMesh* triMesh = nullptr;
-	PxU32 meshSize = 0;
 
-	// The cooked mesh may either be saved to a stream for later loading, or inserted directly into PxPhysics.
-	if (inserted)
-	{
-		triMesh = gCooking->createTriangleMesh(meshDesc, gPhysics->getPhysicsInsertionCallback());
-	}
-	else
-	{
-		PxDefaultMemoryOutputStream outBuffer;
-		gCooking->cookTriangleMesh(meshDesc, outBuffer);
+	PxDefaultFileOutputStream outBuffer(name);
 
-		PxDefaultMemoryInputData stream(outBuffer.getData(), outBuffer.getSize());
-		triMesh = gPhysics->createTriangleMesh(stream);
+	gCooking->cookTriangleMesh(meshDesc, outBuffer);
 
-		meshSize = outBuffer.getSize();
-	}
+}
 
 
+EXPORT void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
+{
+	createBV33TriangleMesh(name, pointsCount, vertices, triCount, indices);
+}
+
+EXPORT long loadTriangleMesh(const char* name)
+{
+	PxDefaultFileInputData stream(name);
+	auto triMesh = gPhysics->createTriangleMesh(stream);
+
+	PXS_ASSERT(triMesh)
 	insertMapNoUserData(PxTriangleMesh, triMesh);
 
 	return insertRef;
 }
 
-
-EXPORT long createTriangleMesh(APIVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
+EXPORT long createConvexMesh(APIVec3* vertices, int pointsCount)
 {
 	lock_step()
 
-	try
-	{
-		const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
-		return createBV33TriangleMesh(pointsCount, verticesPx, triCount, indices, false, false, true, false, false);
-	}
-	catch(std::exception ex)
-	{
-		debugLogError(ex.what());
-	}
-}
+	const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
+	return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
 
-EXPORT long createConvexMesh(APIVec3 vertices[], int pointsCount)
-{
-	lock_step()
-
-	try
-	{
-		const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
-		return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
-	}
-	catch(std::exception ex)
-	{
-		debugLogError(ex.what());
-	}
 }
 EXPORT void cleanupTriangleMesh(long ref)
 {
@@ -637,17 +574,17 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 	debugLogError = func2;
 }
 
-EXPORT void initPhysics(bool isCreatePvd, int numThreads, ErrorCallbackFunc func)
+EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
-	debugLog("init physics native library #1");
-	
+	debugLog("init physics native library #3");
+
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
 
 	PxTolerancesScale scale;
-	scale.length = 100;        // typical length of an object
-	scale.speed = 1000;        // typical speed of an object, gravity*1s is a reasonable choice
+	scale.length = toleranceLength;        // typical length of an object
+	scale.speed = toleranceSpeed;        // typical speed of an object, gravity*1s is a reasonable choice
 
 	gCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
 		

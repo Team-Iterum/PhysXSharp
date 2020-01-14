@@ -3,9 +3,15 @@
 
 #pragma once
 
-#define NDEBUG
+#define PX_DEBUG 1
+#define PX_CHECKED 1
+
+
+
 #include <memory>
 #include "PxPhysicsAPI.h"
+
+
 
 // TODO: Reference additional headers your program requires here.
 
@@ -21,6 +27,7 @@ typedef void (*OverlapCallback)(long t1);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
+
 
 struct APIVec3
 {
@@ -89,3 +96,4 @@ public:
 		callback(message);
 	}
 };
+
