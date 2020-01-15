@@ -6,14 +6,8 @@
 #define PX_DEBUG 1
 #define PX_CHECKED 1
 
-
-
 #include <memory>
 #include "PxPhysicsAPI.h"
-
-
-
-// TODO: Reference additional headers your program requires here.
 
 #if defined(_MSC_VER)
     //  Microsoft 
@@ -28,6 +22,14 @@ typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
 
+struct RigidDynamicParams
+{
+	bool kinematic;
+	bool ccd;
+	bool retainAccelerations;
+
+	float mass;
+};
 
 struct APIVec3
 {
@@ -89,11 +91,10 @@ public:
 	{
 		callback = func;
 	}
-	~ErrorCallback() = default;;
+	~ErrorCallback() = default;
 
 	virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override
 	{
 		callback(message);
 	}
 };
-

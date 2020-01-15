@@ -36,7 +36,7 @@ include_directories("${PHYSX_SDK}/physx/include")
 
 
 if (MSVC)
-	link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/debug")
+	link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/checked")
 	link_libraries(
 			PhysXCommon_64
 			PhysXCooking_64

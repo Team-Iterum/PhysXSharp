@@ -8,10 +8,7 @@
 #include <chrono>
 #include <string>
 #include <sstream>
-#include <algorithm>
 #include <iterator>
-#include <fstream>
-#include <vector>
 
 using namespace std;
 using namespace physx;
@@ -171,7 +168,7 @@ void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 	PxCookingParams params = gCooking->getParams();
 
 	params.midphaseDesc = PxMeshMidPhase::eBVH33;
-	params.midphaseDesc.mBVH33Desc.meshCookingHint = PxMeshCookingHint::eCOOKING_PERFORMANCE;
+	params.midphaseDesc.mBVH33Desc.meshCookingHint = PxMeshCookingHint::eSIM_PERFORMANCE;
 
 	gCooking->setParams(params);
 
@@ -436,19 +433,25 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 }
 
 
+
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, float mass, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, RigidDynamicParams params, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToVec3(pos), ToQuat(quat)));
-	
-	
+
 	const auto insertRef = refOverlap++;
 	refPxRigidDynamics.insert({insertRef, rigid});
 	rigid->userData = reinterpret_cast<void*>(insertRef);
-	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
-	rigid->setMass(mass);
+
+	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, params.kinematic);
+	rigid->setRigidBodyFlag(PxRigidBodyFlag::eRETAIN_ACCELERATIONS, params.retainAccelerations);
+
+	if(!params.kinematic)
+		rigid->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, params.ccd);
+
+	rigid->setMass(params.mass);
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
@@ -522,6 +525,21 @@ EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
 	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
 }
 
+static PxFilterFlags filterShader(
+	PxFilterObjectAttributes attributes0,
+	PxFilterData filterData0,
+	PxFilterObjectAttributes attributes1,
+	PxFilterData filterData1,
+	PxPairFlags& pairFlags,
+	const void* constantBlock,
+	PxU32 constantBlockSize)
+{
+	pairFlags = PxPairFlag::eSOLVE_CONTACT;
+	pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
+	pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
+	return PxFilterFlags();
+}
+
 
 /// SCENE
 EXPORT long createScene(APIVec3 gravity)
@@ -530,12 +548,14 @@ EXPORT long createScene(APIVec3 gravity)
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = ToPxVec3(gravity);
+	sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_STABILIZATION;
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
-	sceneDesc.filterShader	= PxDefaultSimulationFilterShader;
-	
+	sceneDesc.filterShader = filterShader;
+
 	auto scene = gPhysics->createScene(sceneDesc);
-	
+
 	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
 	refPxScenes.insert({insertRef, scene});
@@ -576,7 +596,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
-	debugLog("init physics native library #3");
+	debugLog("init physics native library #4");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
