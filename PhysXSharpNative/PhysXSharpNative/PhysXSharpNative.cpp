@@ -435,7 +435,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, RigidDynamicParams params, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, float mass, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -445,13 +445,13 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, RigidDyn
 	refPxRigidDynamics.insert({insertRef, rigid});
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
-	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, params.kinematic);
-	rigid->setRigidBodyFlag(PxRigidBodyFlag::eRETAIN_ACCELERATIONS, params.retainAccelerations);
+	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
+	rigid->setRigidBodyFlag(PxRigidBodyFlag::eRETAIN_ACCELERATIONS, retain);
 
-	if(!params.kinematic)
-		rigid->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, params.ccd);
+	if(!kinematic)
+		rigid->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, ccd);
 
-	rigid->setMass(params.mass);
+	rigid->setMass(mass);
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
@@ -596,7 +596,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
-	debugLog("init physics native library #4");
+ 	debugLog("init physics native library 2");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
