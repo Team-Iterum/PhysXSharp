@@ -345,6 +345,13 @@ EXPORT void setRigidDynamicLinearVelocity(long ref, APIVec3 v)
 	refPxRigidDynamics[ref]->setLinearVelocity(ToPxVec3(v), true);
 }
 
+EXPORT APIVec3 getRigidDynamicLinearVelocity(long ref)
+{
+	lock_step()
+
+	return ToVec3(refPxRigidDynamics[ref]->getLinearVelocity());
+}
+
 EXPORT void setRigidDynamicLinearDamping(long ref, float v)
 {
 	lock_step()
@@ -359,18 +366,18 @@ EXPORT void setRigidDynamicAngularDamping(long ref, float v)
 	refPxRigidDynamics[ref]->setAngularDamping(v);
 }
 
-EXPORT void addRigidDynamicForce(long ref, APIVec3 v)
+EXPORT void addRigidDynamicForce(long ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
 	lock_step()
 
-	refPxRigidDynamics[ref]->addForce(ToPxVec3(v), PxForceMode::eVELOCITY_CHANGE);
+	refPxRigidDynamics[ref]->addForce(ToPxVec3(v), forceMode);
 }
 
-EXPORT void addRigidDynamicTorque(long ref, APIVec3 v)
+EXPORT void addRigidDynamicTorque(long ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
 	lock_step()
 
-	refPxRigidDynamics[ref]->addTorque(ToPxVec3(v), PxForceMode::eVELOCITY_CHANGE);
+	refPxRigidDynamics[ref]->addTorque(ToPxVec3(v), forceMode);
 }
 EXPORT void setRigidDynamicAngularVelocity(long ref, APIVec3 v)
 {
@@ -413,16 +420,10 @@ EXPORT APIVec3 getRigidDynamicAngularVelocity(long ref)
 
 	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
 }
-EXPORT APIVec3 getRigidDynamicLinearVelocity(long ref)
-{
-	lock_step()
 
-	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
-}
 EXPORT float getRigidDynamicMaxAngularVelocity(long ref)
 {
 	lock_step()
-
 	return refPxRigidDynamics[ref]->getMaxAngularVelocity();
 }
 EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
