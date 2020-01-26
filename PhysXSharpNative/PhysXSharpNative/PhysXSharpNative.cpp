@@ -1,4 +1,4 @@
-﻿// PhysXSharpNative.cpp : Defines the entry point for the application.
+// PhysXSharpNative.cpp : Defines the entry point for the application.
 //
 
 #include "PhysXSharpNative.h"
@@ -16,20 +16,29 @@ using namespace physx;
 DebugLogFunc debugLog;
 DebugLogErrorFunc debugLogError;
 
-void AssertError(const char* exp, const char* file, int line, bool& ignore)
-{
-	std::stringstream oss;
-	oss << "Assert: " << exp;
-	oss << " " << file << ":" << std::to_string(line);
+#if defined(_MSC_VER)
 
-	debugLogError(oss.str().c_str());
-}
-#define PXS_ASSERT(exp)                                                                                           \
-		{                                                                                                        \
-			static bool _ignore = false;                                                                         \
-			((void)((!!(exp)) || (!_ignore && (AssertError(#exp, __FILE__, __LINE__, _ignore), false))));      \
-			__analysis_assume(!!(exp))                                                                           \
-		}
+    void AssertError(const char* exp, const char* file, int line, bool& ignore)
+    {
+        std::stringstream oss;
+        oss << "Assert: " << exp;
+        oss << " " << file << ":" << std::to_string(line);
+
+        debugLogError(oss.str().c_str());
+    }
+
+    #define PXS_ASSERT(exp)                                                                                           \
+    {                                                                                                        \
+        static bool _ignore = false;                                                                         \
+        ((void)((!!(exp)) || (!_ignore && (AssertError(#exp, __FILE__, __LINE__, _ignore), false))));      \
+        __analysis_assume(!!(exp))                                                                           \
+    }
+
+#else
+    #define PXS_ASSERT(exp) {}
+#endif
+
+
 
 // Reference lists
 refMap(PxControllerManager)

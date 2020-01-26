@@ -12,7 +12,7 @@ if (MSVC)
 	set(CompilerFlags
 			CMAKE_CXX_FLAGS
 			CMAKE_CXX_FLAGS_DEBUG
-			CMAKE_CXX_FLAGS_RELEASE
+			CMAKE_CXX_FLAGS_RELEASEc
 			CMAKE_C_FLAGS
 			CMAKE_C_FLAGS_DEBUG
 			CMAKE_C_FLAGS_RELEASE
@@ -27,9 +27,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set(PHYSX_SDK "../../PhysX")
-if (UNIX)
-	find_package(dlib REQUIRED)
-endif(UNIX)
 
 include_directories("${PHYSX_SDK}/pxshared/include")
 include_directories("${PHYSX_SDK}/physx/include")

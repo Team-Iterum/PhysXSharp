@@ -3,14 +3,16 @@
 
 #pragma once
 
-#define PX_DEBUG 1
-#define PX_CHECKED 1
-
 #include <memory>
 #include "PxPhysicsAPI.h"
 
 #if defined(_MSC_VER)
-    //  Microsoft 
+    #define PX_DEBUG 1
+    #define PX_CHECKED 1
+#endif
+
+#if defined(_MSC_VER)
+    //  Microsoft
     #define EXPORT extern "C" __declspec(dllexport)
 #else
 	#define EXPORT extern "C" __attribute__((visibility("default")))
