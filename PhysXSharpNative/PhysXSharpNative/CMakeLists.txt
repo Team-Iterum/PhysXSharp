@@ -12,7 +12,7 @@ if (MSVC)
 	set(CompilerFlags
 			CMAKE_CXX_FLAGS
 			CMAKE_CXX_FLAGS_DEBUG
-			CMAKE_CXX_FLAGS_RELEASEc
+			CMAKE_CXX_FLAGS_RELEASE
 			CMAKE_C_FLAGS
 			CMAKE_C_FLAGS_DEBUG
 			CMAKE_C_FLAGS_RELEASE
@@ -30,7 +30,6 @@ set(PHYSX_SDK "../../PhysX")
 
 include_directories("${PHYSX_SDK}/pxshared/include")
 include_directories("${PHYSX_SDK}/physx/include")
-
 
 if (MSVC)
 	link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/checked")

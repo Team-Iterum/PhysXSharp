@@ -6,52 +6,26 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-#include <string>
-#include <sstream>
-#include <iterator>
 
 using namespace std;
 using namespace physx;
 
-DebugLogFunc debugLog;
-DebugLogErrorFunc debugLogError;
-
-#if defined(_MSC_VER)
-
-    void AssertError(const char* exp, const char* file, int line, bool& ignore)
-    {
-        std::stringstream oss;
-        oss << "Assert: " << exp;
-        oss << " " << file << ":" << std::to_string(line);
-
-        debugLogError(oss.str().c_str());
-    }
-
-    #define PXS_ASSERT(exp)                                                                                           \
-    {                                                                                                        \
-        static bool _ignore = false;                                                                         \
-        ((void)((!!(exp)) || (!_ignore && (AssertError(#exp, __FILE__, __LINE__, _ignore), false))));      \
-        __analysis_assume(!!(exp))                                                                           \
-    }
-
-#else
-    #define PXS_ASSERT(exp) {}
-#endif
-
-
-
 // Reference lists
 refMap(PxControllerManager)
-long refOverlap;
 
+long refOverlap;
 map<long, PxController*> refPxControllers;
-map<long, PxVec3> refControllersDir; 
+map<long, PxVec3> refControllersDir;
+
 map<long, PxRigidStatic*> refPxRigidStatics;
 map<long, PxRigidDynamic*> refPxRigidDynamics;
 
 refMap(PxScene)
+map<long, std::shared_ptr<ContactReport>> refContactReports;
+
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
+
 refMapNonPtr(OverlapBuffer)
 refMapNonPtr(SharedPxGeometry);
 
@@ -70,10 +44,10 @@ PxMaterial* gMaterial	= nullptr;
 std::mutex step_mutex;
 #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
 
-
 PxOverlapBufferN<1000> buffer;
 
 std::thread workerThread;
+
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
 {
@@ -109,7 +83,7 @@ EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback
 EXPORT long createSphereGeometry(float radius)
 {
 	const SharedPxGeometry geo = std::make_shared<PxSphereGeometry>(radius);
-	insertMapNoUserData(SharedPxGeometry, geo);
+	insertMapNoUserData(SharedPxGeometry, geo)
 	return insertRef;
 }
 
@@ -142,7 +116,7 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 	{
 		// Directly insert mesh into PhysX
 		convex = gCooking->createConvexMesh(desc, gPhysics->getPhysicsInsertionCallback());
-		PXS_ASSERT(convex);
+		PXS_ASSERT(convex)
 	}
 	else
 	{
@@ -150,16 +124,15 @@ long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 		PxDefaultMemoryOutputStream outStream;
 		bool res = gCooking->cookConvexMesh(desc, outStream);
 		PX_UNUSED(res);
-		PXS_ASSERT(res);
-		meshSize = outStream.getSize();
+		PXS_ASSERT(res)
 
 		// Create the mesh from a stream.
 		PxDefaultMemoryInputData inStream(outStream.getData(), outStream.getSize());
 		convex = gPhysics->createConvexMesh(inStream);
-		PXS_ASSERT(convex);
+		PXS_ASSERT(convex)
 	}
 
-	insertMapNoUserData(PxConvexMesh, convex);
+	insertMapNoUserData(PxConvexMesh, convex)
 
 	return insertRef;
 }
@@ -181,8 +154,6 @@ void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 
 	gCooking->setParams(params);
 
-	PxTriangleMesh* triMesh = nullptr;
-
 	PxDefaultFileOutputStream outBuffer(name);
 
 	gCooking->cookTriangleMesh(meshDesc, outBuffer);
@@ -201,7 +172,7 @@ EXPORT long loadTriangleMesh(const char* name)
 	auto triMesh = gPhysics->createTriangleMesh(stream);
 
 	PXS_ASSERT(triMesh)
-	insertMapNoUserData(PxTriangleMesh, triMesh);
+	insertMapNoUserData(PxTriangleMesh, triMesh)
 
 	return insertRef;
 }
@@ -281,7 +252,7 @@ EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 p
 	
 	const auto insertRef = refOverlap++;
 	refPxRigidStatics.insert({insertRef, rigid});
-	rigid->userData = reinterpret_cast<void*>(insertRef);;
+	rigid->userData = reinterpret_cast<void*>(insertRef);
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
@@ -499,7 +470,7 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 	c->getActor()->userData = reinterpret_cast<void*>(insertRef);
 	
 	
-	refPxControllers.insert({insertRef, c});;
+	refPxControllers.insert({insertRef, c});
 	refControllersDir.insert({insertRef, PxVec3(0, 0, 0)});
 
 	return insertRef;
@@ -507,7 +478,7 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 EXPORT void destroyController(long ref)
 {
 	lock_step()
-	releaseMap(PxController, ref);
+	releaseMap(PxController, ref)
 }
 
 // get
@@ -544,15 +515,26 @@ static PxFilterFlags filterShader(
 	const void* constantBlock,
 	PxU32 constantBlockSize)
 {
-	pairFlags = PxPairFlag::eSOLVE_CONTACT;
-	pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
-	pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
-	return PxFilterFlags();
+    PX_UNUSED(attributes0);
+    PX_UNUSED(attributes1);
+    PX_UNUSED(filterData0);
+    PX_UNUSED(filterData1);
+    PX_UNUSED(constantBlockSize);
+    PX_UNUSED(constantBlock);
+
+    pairFlags = PxPairFlag::eSOLVE_CONTACT
+                | PxPairFlag::eDETECT_DISCRETE_CONTACT
+                | PxPairFlag::eDETECT_CCD_CONTACT
+                | PxPairFlag::eNOTIFY_TOUCH_FOUND
+                | PxPairFlag::eNOTIFY_TOUCH_PERSISTS
+                | PxPairFlag::eNOTIFY_CONTACT_POINTS;
+
+	return PxFilterFlag::eDEFAULT;
 }
 
 
 /// SCENE
-EXPORT long createScene(APIVec3 gravity)
+EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func)
 {
 	const auto insertRef = refCountPxScene++;
 	
@@ -564,11 +546,15 @@ EXPORT long createScene(APIVec3 gravity)
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
 
+	auto contactReport = std::make_shared<ContactReport>(func);
+    sceneDesc.simulationEventCallback = contactReport.get();
+
 	auto scene = gPhysics->createScene(sceneDesc);
 
 	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
 	refPxScenes.insert({insertRef, scene});
+	refContactReports.insert({insertRef, contactReport});
 	
 	PxPvdSceneClient* pvdClient = scene->getScenePvdClient();
 	if(pvdClient)
@@ -606,7 +592,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library 2");
+ 	debugLog("init physics native library v3");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
@@ -645,7 +631,7 @@ EXPORT void cleanupPhysics()
 		gPvd->release();
 		gPvd = nullptr;
 		
-		PX_RELEASE(transport);
+		PX_RELEASE(transport)
 	}
 	PX_RELEASE(gFoundation);
 }

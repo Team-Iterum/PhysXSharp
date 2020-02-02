@@ -22,7 +22,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Release-WSL" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Release-Visual Studio" />
   <component name="ProjectId" id="1VsdG8T0toyiJERnV1nMq3CBY8f" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -43,29 +43,33 @@
     </configuration>
   </component>
   <component name="WindowStateProjectService">
-    <state x="425" y="185" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1580005404626">
+    <state x="563" y="188" key="#Inspections" timestamp="1580583080191">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
-    <state x="425" y="185" key="#com.intellij.execution.impl.EditConfigurationsDialog/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580005404626" />
+    <state x="563" y="188" key="#Inspections/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580583080191" />
+    <state x="425" y="185" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1580583702049">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="425" y="185" key="#com.intellij.execution.impl.EditConfigurationsDialog/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580583702049" />
     <state x="740" y="284" key="FileChooserDialogImpl" timestamp="1580005043415">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
     <state x="740" y="284" key="FileChooserDialogImpl/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580005043415" />
-    <state x="463" y="171" key="SettingsEditor" timestamp="1580006147699">
+    <state x="463" y="171" key="SettingsEditor" timestamp="1580583872892">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
-    <state x="463" y="171" key="SettingsEditor/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580006147699" />
+    <state x="463" y="171" key="SettingsEditor/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580583872892" />
     <state x="668" y="354" key="com.intellij.ide.util.TipDialog" timestamp="1580004904525">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
     <state x="668" y="354" key="com.intellij.ide.util.TipDialog/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580004904525" />
-    <state x="627" y="245" width="672" height="677" key="run.anything.popup" timestamp="1580006339866">
+    <state x="627" y="245" width="672" height="677" key="run.anything.popup" timestamp="1580583772718">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
-    <state x="627" y="245" width="672" height="677" key="run.anything.popup/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580006339866" />
-    <state x="634" y="245" width="672" height="678" key="search.everywhere.popup" timestamp="1580005738358">
+    <state x="627" y="245" width="672" height="677" key="run.anything.popup/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580583772718" />
+    <state x="634" y="245" width="672" height="678" key="search.everywhere.popup" timestamp="1580583933674">
       <screen x="0" y="0" width="1920" height="1050" />
     </state>
-    <state x="634" y="245" width="672" height="678" key="search.everywhere.popup/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580005738358" />
+    <state x="634" y="245" width="672" height="678" key="search.everywhere.popup/210.1080.1440.870/0.0.1920.1050@0.0.1920.1050" timestamp="1580583933674" />
   </component>
 </project>

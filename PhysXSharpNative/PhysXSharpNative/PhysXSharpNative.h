@@ -4,6 +4,10 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <utility>
 #include "PxPhysicsAPI.h"
 
 #if defined(_MSC_VER)
@@ -18,20 +22,12 @@
 	#define EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
-
 typedef void (*OverlapCallback)(long t1);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
+typedef void (*ContactReportCallbackFunc)(const long ref0, const long ref1);
 
-struct RigidDynamicParams
-{
-	bool kinematic;
-	bool ccd;
-	bool retainAccelerations;
-
-	float mass;
-};
 
 struct APIVec3
 {
@@ -67,17 +63,35 @@ struct APIQuat
 #define refMap(x) map<long, x*> ref##x##s; long refCount##x;
 #define refMapNonPtr(x) map<long, x> ref##x##s; long refCount##x;
 
-#define insertMap(x, y) const auto insertRef = refCount##x++; \
-						ref##x##s.insert({insertRef, y}); \
-						y->userData = reinterpret_cast<void*>(insertRef);
-
 #define insertMapNoUserData(x, y) const auto insertRef = refCount##x++; \
 							      ref##x##s.insert({insertRef, y});
 
 #define releaseMap(x, ref) ref##x##s[ref]->release(); \
 						   ref##x##s[ref] = nullptr; ref##x##s.erase(ref);
 
+DebugLogFunc debugLog;
+DebugLogErrorFunc debugLogError;
 
+#if defined(_MSC_VER)
+    void AssertError(const char* exp, const char* file, int line, bool& ignoreError)
+    {
+        std::stringstream oss;
+        oss << "Assert: " << exp;
+        oss << " " << file << ":" << std::to_string(line);
+
+        debugLogError(oss.str().c_str());
+    }
+
+    #define PXS_ASSERT(exp)                                                                                  \
+    {                                                                                                        \
+        static bool _ignore = false;                                                                         \
+        ((void)((!!(exp)) || (!_ignore && (AssertError(#exp, __FILE__, __LINE__, _ignore), false))));        \
+        __analysis_assume(!!(exp))                                                                           \
+    }
+
+#else
+    #define PXS_ASSERT(exp) {}
+#endif
 
 
 typedef physx::PxOverlapBuffer OverlapBuffer;
@@ -93,10 +107,43 @@ public:
 	{
 		callback = func;
 	}
-	~ErrorCallback() = default;
 
-	virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override
+	void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override
 	{
 		callback(message);
 	}
 };
+
+class ContactReport final : public physx::PxSimulationEventCallback
+{
+private:
+    ContactReportCallbackFunc callback;
+public:
+    explicit ContactReport(ContactReportCallbackFunc func)
+    {
+        callback = func;
+    }
+public:
+    void onContact(const physx::PxContactPairHeader &pairHeader,
+                   const physx::PxContactPair *pairs,
+                   physx::PxU32 nbPairs) override
+    {
+        PX_UNUSED(pairs);
+        PX_UNUSED(nbPairs);
+
+        if(pairHeader.actors[0] != pairHeader.actors[1])
+        {
+            const long ref0 = reinterpret_cast<const long>(pairHeader.actors[0]->userData);
+            const long ref1 = reinterpret_cast<const long>(pairHeader.actors[1]->userData);
+
+            callback(ref0, ref1);
+        }
+    }
+
+    void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)	override { PX_UNUSED(constraints); PX_UNUSED(count); }
+    void onWake(physx::PxActor** actors, physx::PxU32 count)							override { PX_UNUSED(actors); PX_UNUSED(count); }
+    void onSleep(physx::PxActor** actors, physx::PxU32 count)							override { PX_UNUSED(actors); PX_UNUSED(count); }
+    void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)					    override { PX_UNUSED(pairs); PX_UNUSED(count); }
+    void onAdvance(const physx::PxRigidBody*const*, const physx::PxTransform*, const physx::PxU32) override {}
+};
+
