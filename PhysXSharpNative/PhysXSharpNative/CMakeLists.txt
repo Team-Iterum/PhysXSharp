@@ -3,9 +3,15 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
+	set(LINUX TRUE)
 	message(STATUS ">>> Linux")
-endif(UNIX)
+endif(UNIX AND NOT APPLE)
+
+if (APPLE)
+	set(MACOS TRUE)
+	message(STATUS ">>> Apple")
+endif(APPLE)
 
 if (MSVC)
 	message(STATUS ">>> Windows")
@@ -31,8 +37,14 @@ set(PHYSX_SDK "../../PhysX")
 include_directories("${PHYSX_SDK}/pxshared/include")
 include_directories("${PHYSX_SDK}/physx/include")
 
-if (MSVC)
-	link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/checked")
+if (MSVC OR APPLE)
+
+	if(MSVC)
+		link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/checked")
+	else()
+		link_directories("${PHYSX_SDK}/physx/bin/mac.x86_64/checked")
+	endif(MSVC)
+
 	link_libraries(
 			PhysXCommon_64
 			PhysXCooking_64
@@ -44,11 +56,11 @@ if (MSVC)
 			PhysXPvdSDK_static_64
 			PhysXVehicle_static_64
 			Threads::Threads)
-endif (MSVC)
+endif (MSVC OR APPLE)
 
 add_library (PhysXSharpNative SHARED "PhysXSharpNative.cpp" "PhysXSharpNative.h")
 
-if (UNIX)
+if (LINUX)
 	target_link_libraries(PhysXSharpNative
 											libPhysXCommon_64.so
 											libPhysXCooking_64.so
@@ -61,4 +73,19 @@ if (UNIX)
 											PhysXVehicle_static_64
 											Threads::Threads
 											${CMAKE_DL_LIBS})
-endif(UNIX)
+endif(LINUX)
+
+if (MACOS)
+	target_link_libraries(PhysXSharpNative
+			libPhysXCommon_64.dylib
+			libPhysXCooking_64.dylib
+			libPhysXFoundation_64.dylib
+			libPhysX_64.dylib
+
+			PhysXCharacterKinematic_static_64
+			PhysXExtensions_static_64
+			PhysXPvdSDK_static_64
+			PhysXVehicle_static_64
+			Threads::Threads
+			${CMAKE_DL_LIBS})
+endif(MACOS)

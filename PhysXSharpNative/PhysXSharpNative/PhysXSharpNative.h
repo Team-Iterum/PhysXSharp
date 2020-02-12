@@ -3,6 +3,10 @@
 
 #pragma once
 
+#if defined(__APPLE__)
+    #define NDEBUG
+#endif
+
 #include <memory>
 #include <string>
 #include <sstream>
