@@ -515,8 +515,6 @@ static PxFilterFlags filterShader(
 	const void* constantBlock,
 	PxU32 constantBlockSize)
 {
-    PX_UNUSED(attributes0);
-    PX_UNUSED(attributes1);
     PX_UNUSED(filterData0);
     PX_UNUSED(filterData1);
     PX_UNUSED(constantBlockSize);
@@ -529,6 +527,10 @@ static PxFilterFlags filterShader(
                 | PxPairFlag::eNOTIFY_TOUCH_PERSISTS
                 | PxPairFlag::eNOTIFY_CONTACT_POINTS;
 
+    if (PxFilterObjectIsKinematic(attributes0) && PxFilterObjectIsKinematic(attributes1))
+    {
+        pairFlags &= ~PxPairFlag::eSOLVE_CONTACT;
+    }
 	return PxFilterFlag::eDEFAULT;
 }
 
@@ -540,8 +542,10 @@ EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func)
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = ToPxVec3(gravity);
-	sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
-	sceneDesc.flags |= PxSceneFlag::eENABLE_STABILIZATION;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
+
+	sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
+    sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
@@ -592,7 +596,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v3");
+ 	debugLog("init physics native library v4 kinematic pairs");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	

@@ -26,12 +26,6 @@
 	#define EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
-typedef void (*OverlapCallback)(long t1);
-typedef void (*ErrorCallbackFunc)(const char* message);
-typedef void (*DebugLogFunc)(const char* message);
-typedef void (*DebugLogErrorFunc)(const char* message);
-typedef void (*ContactReportCallbackFunc)(const long ref0, const long ref1);
-
 
 struct APIVec3
 {
@@ -54,6 +48,12 @@ struct APIQuat
     float z;
     float w;
 };
+
+typedef void (*OverlapCallback)(long t1);
+typedef void (*ErrorCallbackFunc)(const char* message);
+typedef void (*DebugLogFunc)(const char* message);
+typedef void (*DebugLogErrorFunc)(const char* message);
+typedef void (*ContactReportCallbackFunc)(const long ref0, const long ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation);
 
 #define ToPxVec3(v) physx::PxVec3(v.x, v.y, v.z)
 #define ToPxVec3d(v) physx::PxExtendedVec3(v.x, v.y, v.z)
@@ -132,15 +132,48 @@ public:
                    const physx::PxContactPair *pairs,
                    physx::PxU32 nbPairs) override
     {
-        PX_UNUSED(pairs);
-        PX_UNUSED(nbPairs);
 
         if(pairHeader.actors[0] != pairHeader.actors[1])
         {
-            const long ref0 = reinterpret_cast<const long>(pairHeader.actors[0]->userData);
-            const long ref1 = reinterpret_cast<const long>(pairHeader.actors[1]->userData);
+            long ref0 = reinterpret_cast<const long>(pairHeader.actors[0]->userData);
+            long ref1 = reinterpret_cast<const long>(pairHeader.actors[1]->userData);
 
-            callback(ref0, ref1);
+            // Contact information
+            APIVec3 normal = {0, 0, 0};
+            APIVec3 position = {0, 0, 0};
+            APIVec3 impulse = {0, 0, 0};
+            float separation = 100;
+
+
+            const physx::PxU32 bufferSize = 32;
+            physx::PxContactPairPoint contacts[bufferSize];
+
+
+            for (physx::PxU32 i = 0; i < nbPairs; i++)
+            {
+                const physx::PxU32 nbContacts = pairs[i].contactCount;
+
+                if(nbContacts == 0) continue;
+
+                pairs[i].extractContacts(contacts, bufferSize);
+
+                ref0 = reinterpret_cast<const long>(pairs[i].shapes[0]->getActor()->userData);
+                ref1 = reinterpret_cast<const long>(pairs[i].shapes[1]->getActor()->userData);
+
+
+                for (int j = 0; j < nbContacts; j++)
+                {
+                    if(separation > contacts[j].separation)
+                    {
+                        normal = ToVec3(contacts[j].normal);
+                        position = ToVec3(contacts[j].position);
+                        impulse = ToVec3(contacts[j].impulse);
+                        separation = contacts[j].separation;
+                    }
+                }
+            }
+
+            callback(ref0, ref1, normal, position, impulse, separation);
         }
     }
 
