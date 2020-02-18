@@ -3,7 +3,7 @@
 
 #pragma once
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(_MSC_VER)
     #define NDEBUG
 #endif
 

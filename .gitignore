@@ -408,3 +408,5 @@ PhysXSharpNative/out
 .DS_Store
 PhysXSharpNative/cmake-build-*
 .idea
+PhysXSharpNative/PhysXSharpNative.xcodeproj
+PhysXSharpNative/CMakeSettings.json

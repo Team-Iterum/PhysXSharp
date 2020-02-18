@@ -24,7 +24,7 @@ if (MSVC)
 			CMAKE_C_FLAGS_RELEASE
 			)
 	foreach(CompilerFlag ${CompilerFlags})
-		string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+		string(REPLACE "/MDd" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
 endif (MSVC)
 
