@@ -1,4 +1,4 @@
-﻿// PhysXSharpNative.h : Include file for standard system include files,
+// PhysXSharpNative.h : Include file for standard system include files,
 // or project specific include files.
 
 #pragma once
@@ -54,6 +54,7 @@ typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
 typedef void (*ContactReportCallbackFunc)(const long ref0, const long ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation);
+typedef void (*TriggerReportCallbackFunc)(const long ref0, const long ref1);
 
 #define ToPxVec3(v) physx::PxVec3(v.x, v.y, v.z)
 #define ToPxVec3d(v) physx::PxExtendedVec3(v.x, v.y, v.z)
@@ -118,14 +119,25 @@ public:
 	}
 };
 
+struct FilterGroup
+{
+    enum Enum
+    {
+        eOBJECT        = (1 << 0),
+        eTRIGGER       = (1 << 1),
+    };
+};
+
 class ContactReport final : public physx::PxSimulationEventCallback
 {
 private:
     ContactReportCallbackFunc callback;
+    TriggerReportCallbackFunc triggerCallback;
 public:
-    explicit ContactReport(ContactReportCallbackFunc func)
+    explicit ContactReport(ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc)
     {
         callback = func;
+        triggerCallback = triggerFunc;
     }
 public:
     void onContact(const physx::PxContactPairHeader &pairHeader,
@@ -138,6 +150,7 @@ public:
             long ref0 = reinterpret_cast<const long>(pairHeader.actors[0]->userData);
             long ref1 = reinterpret_cast<const long>(pairHeader.actors[1]->userData);
 
+            bool isTrigger = false;
             // Contact information
             APIVec3 normal = {0, 0, 0};
             APIVec3 position = {0, 0, 0};
@@ -157,9 +170,18 @@ public:
 
                 pairs[i].extractContacts(contacts, bufferSize);
 
-                ref0 = reinterpret_cast<const long>(pairs[i].shapes[0]->getActor()->userData);
-                ref1 = reinterpret_cast<const long>(pairs[i].shapes[1]->getActor()->userData);
-
+                auto shape0 = pairs[i].shapes[0];
+                auto shape1 = pairs[i].shapes[1];
+                
+                ref0 = reinterpret_cast<const long>(shape0->getActor()->userData);
+                ref1 = reinterpret_cast<const long>(shape1->getActor()->userData);
+                
+                if((shape0->getSimulationFilterData().word0 == 1) ||
+                   (shape1->getSimulationFilterData().word0 == 1))
+                {
+                    isTrigger = true;
+                }
+                
 
                 for (int j = 0; j < nbContacts; j++)
                 {
@@ -173,14 +195,22 @@ public:
                 }
             }
 
-            callback(ref0, ref1, normal, position, impulse, separation);
+            if(isTrigger)
+            {
+                triggerCallback(ref0, ref1);
+            }
+            else
+            {
+                callback(ref0, ref1, normal, position, impulse, separation);
+            }
         }
     }
 
     void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)	override { PX_UNUSED(constraints); PX_UNUSED(count); }
     void onWake(physx::PxActor** actors, physx::PxU32 count)							override { PX_UNUSED(actors); PX_UNUSED(count); }
     void onSleep(physx::PxActor** actors, physx::PxU32 count)							override { PX_UNUSED(actors); PX_UNUSED(count); }
-    void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)					    override { PX_UNUSED(pairs); PX_UNUSED(count); }
+    
+    void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)                     override { PX_UNUSED(pairs); PX_UNUSED(count); }
     void onAdvance(const physx::PxRigidBody*const*, const physx::PxTransform*, const physx::PxU32) override {}
 };
 

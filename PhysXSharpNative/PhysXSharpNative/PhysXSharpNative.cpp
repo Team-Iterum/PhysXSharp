@@ -238,12 +238,13 @@ void setupGeometryType(int type, long refGeo, PxRigidActor* rigid)
 		geo.triangleMesh = refPxTriangleMeshs[refGeo];
 		
 		PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
+        
 	}
 }
 
 /// RIGID STATIC
 // create
-EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 pos, APIQuat quat, bool isTrigger)
 {
 	lock_step()
 
@@ -256,6 +257,20 @@ EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 p
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
+    if(isTrigger)
+    {
+        PxShape* triggerShape;
+        rigid->getShapes(&triggerShape, 1);
+        triggerShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+        triggerShape->setFlag(PxShapeFlag::eSCENE_QUERY_SHAPE, true);
+        
+        PxFilterData filterData;
+        filterData.word0 = 1;
+        
+        triggerShape->setSimulationFilterData(filterData);
+
+    }
+    
 	refPxScenes[refScene]->addActor(*rigid);
 	
 	return insertRef;
@@ -416,7 +431,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, float mass, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool isTrigger, float mass, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -436,6 +451,18 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
+    if(isTrigger)
+    {
+        PxShape* triggerShape;
+        rigid->getShapes(&triggerShape, 1);
+        
+        PxFilterData filterData;
+        filterData.word0 = 1;
+        
+        triggerShape->setSimulationFilterData(filterData);
+
+    }
+    
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
 }
@@ -506,6 +533,7 @@ EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
 	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
 }
 
+
 static PxFilterFlags filterShader(
 	PxFilterObjectAttributes attributes0,
 	PxFilterData filterData0,
@@ -515,28 +543,34 @@ static PxFilterFlags filterShader(
 	const void* constantBlock,
 	PxU32 constantBlockSize)
 {
-    PX_UNUSED(filterData0);
-    PX_UNUSED(filterData1);
     PX_UNUSED(constantBlockSize);
     PX_UNUSED(constantBlock);
 
+    
     pairFlags = PxPairFlag::eSOLVE_CONTACT
                 | PxPairFlag::eDETECT_DISCRETE_CONTACT
                 | PxPairFlag::eDETECT_CCD_CONTACT
                 | PxPairFlag::eNOTIFY_TOUCH_FOUND
                 | PxPairFlag::eNOTIFY_TOUCH_PERSISTS
                 | PxPairFlag::eNOTIFY_CONTACT_POINTS;
-
+    
     if (PxFilterObjectIsKinematic(attributes0) && PxFilterObjectIsKinematic(attributes1))
     {
         pairFlags &= ~PxPairFlag::eSOLVE_CONTACT;
     }
+    
+    if((filterData0.word0 == 1 ) || (filterData1.word0 == 1 ))
+    {
+        pairFlags &= ~PxPairFlag::eSOLVE_CONTACT;
+        //pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
+    }
+    
 	return PxFilterFlag::eDEFAULT;
 }
 
 
 /// SCENE
-EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func)
+EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc)
 {
 	const auto insertRef = refCountPxScene++;
 	
@@ -544,13 +578,12 @@ EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func)
 	sceneDesc.gravity = ToPxVec3(gravity);
 	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
 
-	sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
-    sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
+	//sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
 
-	auto contactReport = std::make_shared<ContactReport>(func);
+	auto contactReport = std::make_shared<ContactReport>(func, triggerFunc);
     sceneDesc.simulationEventCallback = contactReport.get();
 
 	auto scene = gPhysics->createScene(sceneDesc);
@@ -577,6 +610,7 @@ EXPORT void stepPhysics(long ref, float dt)
 
 	refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
+    
 }
 
 EXPORT void cleanupScene(long ref)
@@ -596,7 +630,7 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v4 kinematic pairs");
+ 	debugLog("init physics native library v5");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
