@@ -214,3 +214,13 @@ public:
     void onAdvance(const physx::PxRigidBody*const*, const physx::PxTransform*, const physx::PxU32) override {}
 };
 
+
+void createBV33TriangleMesh(const char* name, physx::PxU32 numVertices, const physx::PxVec3* vertices, physx::PxU32 numTriangles, const physx::PxU32* indices);
+
+void createTriangleMesh(const char* name, physx::PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount);
+
+EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2);
+
+EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func);
+
+EXPORT long loadTriangleMesh(const char* name);

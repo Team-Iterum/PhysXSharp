@@ -410,3 +410,4 @@ PhysXSharpNative/cmake-build-*
 .idea
 PhysXSharpNative/PhysXSharpNative.xcodeproj
 PhysXSharpNative/CMakeSettings.json
+MeshUtility/build

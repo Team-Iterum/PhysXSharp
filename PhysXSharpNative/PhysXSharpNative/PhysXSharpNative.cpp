@@ -161,12 +161,12 @@ void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 }
 
 
-EXPORT void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
+void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
 {
 	createBV33TriangleMesh(name, pointsCount, vertices, triCount, indices);
 }
 
-EXPORT long loadTriangleMesh(const char* name)
+long loadTriangleMesh(const char* name)
 {
 	PxDefaultFileInputData stream(name);
 	auto triMesh = gPhysics->createTriangleMesh(stream);
@@ -622,15 +622,15 @@ EXPORT long getSceneTimestamp(long ref)
 	return refPxScenes[ref]->getTimestamp();
 }
 
-EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
+void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 {
 	debugLog = func;
 	debugLogError = func2;
 }
 
-EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
+void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v5");
+ 	debugLog("init physics native library v6");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
