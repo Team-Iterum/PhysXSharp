@@ -2,8 +2,10 @@
 
 #include <fstream>
 #include <string>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 int main (int argc, char *argv[])
 {
@@ -16,12 +18,16 @@ int main (int argc, char *argv[])
     initLog(logDebug, logError);
     initPhysics(false, numThreads, toleranceLength, toleranceSpeed, logCritical);
     
-    for (unsigned int i = 0; i <= 62; i++)
+    string path = "ThingTypes";
+    for (const auto & entry : fs::directory_iterator(path))
     {
+        const auto extension = entry.path().extension();
+        if(extension != ".txt") continue;
+        
         auto vertices = make_shared<VertList>();
         auto indices = make_shared<IndList>();
         
-        const auto meshDataName = getMeshDataName(i);
+        const auto meshDataName = entry.path();
                 
         std::ifstream file(meshDataName);
         std::string str;
@@ -50,17 +56,16 @@ int main (int argc, char *argv[])
             }
         }
         
-        const auto meshName = getMeshName(i);
-        cout << meshName <<  " vertCount: " << to_string(vertices->size()) << " indCount: " << to_string(indices->size()) << endl;
+        std::stringstream ss;
+        ss << "MeshData" << "/" << entry.path().filename().replace_extension(".mesh").string();
         
-        createTriangleMesh(meshName.c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
+        cout << ss.str() <<  " vertCount: " << to_string(vertices->size()) << " indCount: " << to_string(indices->size()) << endl;
+        
+        createTriangleMesh(ss.str().c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
         
         cout << endl;
     }
-    
-    
-    
-    
+
     return 0;
 }
 

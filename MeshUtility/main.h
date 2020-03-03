@@ -28,14 +28,8 @@ void logError(const char* msg)
 std::string getMeshName(unsigned int meshId)
 {
     std::stringstream str;
-    str << "Meshes" << "/" << std::to_string(meshId) << ".mesh";
+    str << "MeshData" << "/" << std::to_string(meshId) << ".mesh";
     return str.str();
 }
 
-std::string getMeshDataName(unsigned int meshId)
-{
-    std::stringstream str;
-    str << "MeshesData" << "/" << std::to_string(meshId) << ".txt";
-    return str.str();
-}
 
