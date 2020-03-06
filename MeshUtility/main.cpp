@@ -7,9 +7,11 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-int main (int argc, char *argv[])
+
+int main (int argc, const char* argv[])
 {
-    cout << "PhysXSharpNative Mesh Utility 1.0" << endl;
+    cout << "PhysXSharpNative Mesh Utility 1.1" << endl;
+    cout << "Help args: ./MeshUtility [basePath]" << endl;
     
     const int numThreads = 2;
     const float toleranceLength = 1;
@@ -18,7 +20,13 @@ int main (int argc, char *argv[])
     initLog(logDebug, logError);
     initPhysics(false, numThreads, toleranceLength, toleranceSpeed, logCritical);
     
-    string path = "ThingTypes";
+    string basePath = "";
+    if(argc > 1) 
+    {
+        basePath = string(argv[1]);
+    }
+
+    string path = basePath + separator() + string("Mesh");
     for (const auto & entry : fs::directory_iterator(path))
     {
         const auto extension = entry.path().extension();
@@ -56,12 +64,12 @@ int main (int argc, char *argv[])
             }
         }
         
-        std::stringstream ss;
-        ss << "MeshData" << "/" << entry.path().filename().replace_extension(".mesh").string();
         
-        cout << ss.str() <<  " vertCount: " << to_string(vertices->size()) << " indCount: " << to_string(indices->size()) << endl;
+        const string finalPath = path + separator() + entry.path().filename().replace_extension(".mesh").string();
         
-        createTriangleMesh(ss.str().c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
+        cout << finalPath <<  " vertCount: " << to_string(vertices->size()) << " indCount: " << to_string(indices->size()) << endl;
+        
+        createTriangleMesh(finalPath.c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
         
         cout << endl;
     }

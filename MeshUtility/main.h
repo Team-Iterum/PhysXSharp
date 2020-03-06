@@ -6,6 +6,15 @@
 
 #include <PhysXSharpNative.h>
 
+inline std::string separator()
+{
+#ifdef _WIN32
+    return std::string("\");
+#else
+    return std::string("/");
+#endif
+}
+
 typedef std::vector<physx::PxVec3> VertList;
 typedef std::vector<unsigned int> IndList;
 
