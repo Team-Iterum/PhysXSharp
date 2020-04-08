@@ -51,9 +51,10 @@ std::thread workerThread;
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
 {
+    lock_step()
 	for (auto pair : refPxControllers)
 	{
-		pair.second->move(refControllersDir[pair.first], 0.05f, elapsed, PxControllerFilters());
+		pair.second->move(refControllersDir[pair.first], minDist, elapsed, PxControllerFilters());
 	}
 }
 
@@ -62,6 +63,7 @@ EXPORT void setControllerDirection(long ref, APIVec3 dir)
 {
 	refControllersDir[ref] = ToPxVec3(dir);
 }
+
 
 EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback callback)
 {
@@ -333,6 +335,7 @@ EXPORT void setRigidDynamicKinematicTarget(long ref, APIVec3 p, APIQuat q)
 	refPxRigidDynamics[ref]->setKinematicTarget(PxTransform(ToPxVec3(p), ToPxQuat(q)));
 }
 
+
 EXPORT void setRigidDynamicLinearVelocity(long ref, APIVec3 v)
 {
 	lock_step()
@@ -431,7 +434,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool isTrigger, float mass, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -439,14 +442,19 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
 
 	const auto insertRef = refOverlap++;
 	refPxRigidDynamics.insert({insertRef, rigid});
-	rigid->userData = reinterpret_cast<void*>(insertRef);
-
+	
+    rigid->userData = reinterpret_cast<void*>(insertRef);
+    
 	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
+    
 	rigid->setRigidBodyFlag(PxRigidBodyFlag::eRETAIN_ACCELERATIONS, retain);
 
 	if(!kinematic)
 		rigid->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, ccd);
 
+    if(disableGravity)
+        rigid->setActorFlags(PxActorFlag::Enum::eDISABLE_GRAVITY);
+    
 	rigid->setMass(mass);
 
 	setupGeometryType(geoType, refGeo, rigid);
