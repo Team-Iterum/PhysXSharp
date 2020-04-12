@@ -162,10 +162,92 @@ void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 
 }
 
+// Setup common cooking params
+void setupCommonCookingParams(PxCookingParams& params, bool skipMeshCleanup, bool skipEdgeData)
+{
+        // we suppress the triangle mesh remap table computation to gain some speed, as we will not need it
+    // in this snippet
+    params.suppressTriangleMeshRemapTable = true;
+
+    // If DISABLE_CLEAN_MESH is set, the mesh is not cleaned during the cooking. The input mesh must be valid.
+    // The following conditions are true for a valid triangle mesh :
+    //  1. There are no duplicate vertices(within specified vertexWeldTolerance.See PxCookingParams::meshWeldTolerance)
+    //  2. There are no large triangles(within specified PxTolerancesScale.)
+    // It is recommended to run a separate validation check in debug/checked builds, see below.
+
+    if (!skipMeshCleanup)
+        params.meshPreprocessParams &= ~static_cast<PxMeshPreprocessingFlags>(PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH);
+    else
+        params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
+
+    // If DISABLE_ACTIVE_EDGES_PREDOCOMPUTE is set, the cooking does not compute the active (convex) edges, and instead
+    // marks all edges as active. This makes cooking faster but can slow down contact generation. This flag may change
+    // the collision behavior, as all edges of the triangle mesh will now be considered active.
+    if (!skipEdgeData)
+        params.meshPreprocessParams &= ~static_cast<PxMeshPreprocessingFlags>(PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE);
+    else
+        params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+}
+
+// Creates a triangle mesh using BVH34 midphase with different settings.
+void createBV34TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* vertices, PxU32 numTriangles, const PxU32* indices,
+    bool skipMeshCleanup, bool skipEdgeData, bool inserted, const PxU32 numTrisPerLeaf)
+{
+    
+
+    PxTriangleMeshDesc meshDesc;
+    meshDesc.points.count = numVertices;
+    meshDesc.points.data = vertices;
+    meshDesc.points.stride = sizeof(PxVec3);
+    meshDesc.triangles.count = numTriangles;
+    meshDesc.triangles.data = indices;
+    meshDesc.triangles.stride = 3 * sizeof(PxU32);
+
+    PxCookingParams params = gCooking->getParams();
+
+    // Create BVH34 midphase
+    params.midphaseDesc = PxMeshMidPhase::eBVH34;
+
+    // setup common cooking params
+    setupCommonCookingParams(params, skipMeshCleanup, skipEdgeData);
+
+    // Cooking mesh with less triangles per leaf produces larger meshes with better runtime performance
+    // and worse cooking performance. Cooking time is better when more triangles per leaf are used.
+    params.midphaseDesc.mBVH34Desc.numPrimsPerLeaf = numTrisPerLeaf;
+
+    gCooking->setParams(params);
+
+#if defined(PX_CHECKED) || defined(PX_DEBUG)
+    // If DISABLE_CLEAN_MESH is set, the mesh is not cleaned during the cooking.
+    // We should check the validity of provided triangles in debug/checked builds though.
+    if (skipMeshCleanup)
+    {
+        if(!gCooking->validateTriangleMesh(meshDesc))
+        {
+            printf("Error validateTriangleMesh");
+            return;
+        }
+    }
+#endif // DEBUG
+    
+    PxDefaultFileOutputStream outBuffer(name);
+    gCooking->cookTriangleMesh(meshDesc, outBuffer);
+
+    // Print the elapsed time for comparison
+    printf("\t -----------------------------------------------\n");
+    printf("\t Create triangle mesh with %d triangles: \n", numTriangles);
+    !skipEdgeData ? printf("\t\t Precompute edge data on\n") : printf("\t\t Precompute edge data off\n");
+    !skipMeshCleanup ? printf("\t\t Mesh cleanup on\n") : printf("\t\t Mesh cleanup off\n");
+    printf("\t\t Num triangles per leaf: %d \n", numTrisPerLeaf);
+}
+
+
 
 void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount)
 {
-	createBV33TriangleMesh(name, pointsCount, vertices, triCount, indices);
+    // Favor runtime speed, cleaning the mesh and precomputing active edges. Store the mesh in a stream.
+    // These are the default settings, suitable for offline cooking.
+    createBV34TriangleMesh(name, pointsCount, vertices, triCount, indices, false, false, false, 4);
 }
 
 long loadTriangleMesh(const char* name)
