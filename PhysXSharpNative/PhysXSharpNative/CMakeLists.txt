@@ -35,17 +35,17 @@ find_package(Threads REQUIRED)
 
 set(PHYSX_SDK "../../PhysX")
 
-include_directories("${PHYSX_SDK}/pxshared/include")
+include_directories("${PHYSX_SDK}/PxShared/include")
 include_directories("${PHYSX_SDK}/PhysX_3.4/include")
 
 if (MACOS)
 	link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/osx64/")
-    link_directories("${PHYSX_SDK}/pxshared/Lib/osx64/")
+    link_directories("${PHYSX_SDK}/PxShared/Lib/osx64/")
 endif (MACOS)
 
 if(LINUX)
 	link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/linux64/")
-    link_directories("${PHYSX_SDK}/pxshared/Lib/linux64/")
+    link_directories("${PHYSX_SDK}/PxShared/Lib/linux64/")
 endif (LINUX)
 
 link_libraries(		
