@@ -15,17 +15,6 @@ endif(APPLE)
 
 if (MSVC)
 	message(STATUS ">>> Windows NOT SUPPORTED")
-	set(CompilerFlags
-			CMAKE_CXX_FLAGS
-			CMAKE_CXX_FLAGS_DEBUG
-			CMAKE_CXX_FLAGS_RELEASE
-			CMAKE_C_FLAGS
-			CMAKE_C_FLAGS_DEBUG
-			CMAKE_C_FLAGS_RELEASE
-			)
-	foreach(CompilerFlag ${CompilerFlags})
-		string(REPLACE "/MDd" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-	endforeach()
 endif (MSVC)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -43,60 +32,100 @@ if (MACOS)
     link_directories("${PHYSX_SDK}/PxShared/Lib/osx64/")
 endif (MACOS)
 
-if(LINUX)
+if (LINUX)
 	link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/linux64/")
-    link_directories("${PHYSX_SDK}/PxShared/Lib/linux64/")
+	link_directories("${PHYSX_SDK}/PhysX_3.4/Bib/linux64/")
+
+    link_directories("${PHYSX_SDK}/PxShared/lib/linux64/")
+    link_directories("${PHYSX_SDK}/PxShared/bin/linux64/")
+
+	link_libraries(
+
+		libPhysX3CharacterKinematic_x64.so
+		libPhysX3Common_x64.so
+		libPhysX3Cooking_x64.so
+		libPhysX3_x64.so	
+
+		libPxFoundation_x64.so
+		libPxPvdSDK_x64.so
+
+		libLowLevel.a
+		libLowLevelAABB.a
+		libLowLevelCloth.a
+		libLowLevelDynamics.a
+		libLowLevelParticles.a
+		libPhysX3Extensions.a
+		libPhysX3Vehicle.a
+		libSceneQuery.a
+		libSimulationController.a
+
+		libPsFastXml.a
+		libPxTask.a
+
+		Threads::Threads
+	)
 endif (LINUX)
-
-link_libraries(		
-	LowLevelAABBCHECKED
-	SimulationControllerCHECKED
-	SceneQueryCHECKED
-	PhysX3VehicleCHECKED
-	PhysX3ExtensionsCHECKED
-	PhysX3CookingCHECKED
-	PhysX3CommonCHECKED
-	PhysX3CHECKED
-	PhysX3CharacterKinematicCHECKED
-	LowLevelParticlesCHECKED
-	LowLevelDynamicsCHECKED
-	LowLevelClothCHECKED
-	LowLevelCHECKED
-
-	PxTaskCHECKED
-	PxPvdSDKCHECKED
-	PxFoundationCHECKED
-	PsFastXmlCHECKED
-
-	Threads::Threads
-)
 
 add_library (PhysXSharpNative SHARED "PhysXSharpNative.cpp" "PhysXSharpNative.h")
 
 
-target_link_libraries(
-    PhysXSharpNative
-    
-    LowLevelAABBCHECKED
-    SimulationControllerCHECKED
-    SceneQueryCHECKED
-    PhysX3VehicleCHECKED
-    PhysX3ExtensionsCHECKED
-    PhysX3CookingCHECKED
-    PhysX3CommonCHECKED
-    PhysX3CHECKED
-    PhysX3CharacterKinematicCHECKED
-    LowLevelParticlesCHECKED
-    LowLevelDynamicsCHECKED
-    LowLevelClothCHECKED
-    LowLevelCHECKED
-    
-    PxTaskCHECKED
-    PxPvdSDKCHECKED
-    PxFoundationCHECKED
-    PsFastXmlCHECKED
-    
-	Threads::Threads
+if (LINUX)
+	target_link_libraries(PhysXSharpNative
+	    
+	    libPhysX3CharacterKinematic_x64.so
+		libPhysX3Common_x64.so
+		libPhysX3Cooking_x64.so
+		libPhysX3_x64.so	
 
-	${CMAKE_DL_LIBS}
-)
+		libPxFoundation_x64.so
+		libPxPvdSDK_x64.so
+
+		libLowLevel.a
+		libLowLevelAABB.a
+		libLowLevelCloth.a
+		libLowLevelDynamics.a
+		libLowLevelParticles.a
+		libPhysX3Extensions.a
+		libPhysX3Vehicle.a
+		libSceneQuery.a
+		libSimulationController.a
+
+		libPsFastXml.a
+		libPxTask.a
+		
+		Threads::Threads
+
+		${CMAKE_DL_LIBS}
+	)
+endif (LINUX)
+
+if (MACOS)
+	target_link_libraries(PhysXSharpNative
+	    
+	    libPhysX3CharacterKinematic_x64.so
+		libPhysX3Common_x64.so
+		libPhysX3Cooking_x64.so
+		libPhysX3_x64.so	
+
+		libPxFoundation_x64.so
+		libPxPvdSDK_x64.so
+
+		libLowLevel.a
+		libLowLevelAABB.a
+		libLowLevelCloth.a
+		libLowLevelDynamics.a
+		libLowLevelParticles.a
+		libPhysX3Extensions.a
+		libPhysX3Vehicle.a
+		libSceneQuery.a
+		libSimulationController.a
+
+		libPsFastXml.a
+		libPxTask.a
+		
+		Threads::Threads
+
+		${CMAKE_DL_LIBS}
+	)
+endif (LINUX)
+
