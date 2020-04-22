@@ -34,7 +34,7 @@ endif (MACOS)
 
 if (LINUX)
 	link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/linux64/")
-	link_directories("${PHYSX_SDK}/PhysX_3.4/Bib/linux64/")
+	link_directories("${PHYSX_SDK}/PhysX_3.4/Bin/linux64/")
 
     link_directories("${PHYSX_SDK}/PxShared/lib/linux64/")
     link_directories("${PHYSX_SDK}/PxShared/bin/linux64/")
