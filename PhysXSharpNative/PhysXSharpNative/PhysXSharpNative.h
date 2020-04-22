@@ -3,9 +3,8 @@
 
 #pragma once
 
-#if defined(__APPLE__) || defined(_MSC_VER)
-    #define NDEBUG
-#endif
+
+#define NDEBUG
 
 #include <memory>
 #include <string>
