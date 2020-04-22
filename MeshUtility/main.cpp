@@ -14,7 +14,7 @@ int main (int argc, const char* argv[])
     cout << "Help args: ./MeshUtility [basePath]" << endl;
     
     const int numThreads = 2;
-    const float toleranceLength = 1;
+    const float toleranceLength = 0.5;
     const float toleranceSpeed = 5;
     
     initLog(logDebug, logError);

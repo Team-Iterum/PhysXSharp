@@ -1,4 +1,4 @@
-﻿# CMakeList.txt : CMake project for PhysXSharpNative, include source and define
+# CMakeList.txt : CMake project for PhysXSharpNative, include source and define
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.8)
@@ -35,26 +35,39 @@ find_package(Threads REQUIRED)
 set(PHYSX_SDK "../../PhysX")
 
 include_directories("${PHYSX_SDK}/pxshared/include")
-include_directories("${PHYSX_SDK}/physx/include")
+include_directories("${PHYSX_SDK}/PhysX_3.4/include")
 
 if (MSVC OR APPLE)
 
 	if(MSVC)
-		link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/checked")
+		link_directories("${PHYSX_SDK}/physx/bin/win.x86_64.vc142.mt/release")
 	else()
-		link_directories("${PHYSX_SDK}/physx/bin/mac.x86_64/checked")
+		link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/osx64/")
+        link_directories("${PHYSX_SDK}/pxshared/Lib/osx64/")
 	endif(MSVC)
 
 	link_libraries(
-			PhysXCommon_64
-			PhysXCooking_64
-			PhysXFoundation_64
-			PhysX_64
 
-			PhysXCharacterKinematic_static_64
-			PhysXExtensions_static_64
-			PhysXPvdSDK_static_64
-			PhysXVehicle_static_64
+			
+            libLowLevelAABBCHECKED.a
+            libSimulationControllerCHECKED.a
+            libSceneQueryCHECKED.a
+            libPhysX3VehicleCHECKED.a
+            libPhysX3ExtensionsCHECKED.a
+            libPhysX3CookingCHECKED.a
+            libPhysX3CommonCHECKED.a
+            libPhysX3CHECKED.a
+            libPhysX3CharacterKinematicCHECKED.a
+            libLowLevelParticlesCHECKED.a
+            libLowLevelDynamicsCHECKED.a
+            libLowLevelClothCHECKED.a
+            libLowLevelCHECKED.a
+            
+            libPxTaskCHECKED.a
+            libPxPvdSDKCHECKED.a
+            libPxFoundationCHECKED.a
+            libPsFastXmlCHECKED.a
+
 			Threads::Threads)
 endif (MSVC OR APPLE)
 
@@ -76,16 +89,28 @@ if (LINUX)
 endif(LINUX)
 
 if (MACOS)
-	target_link_libraries(PhysXSharpNative
-			libPhysXCommon_64.dylib
-			libPhysXCooking_64.dylib
-			libPhysXFoundation_64.dylib
-			libPhysX_64.dylib
-
-			PhysXCharacterKinematic_static_64
-			PhysXExtensions_static_64
-			PhysXPvdSDK_static_64
-			PhysXVehicle_static_64
+	target_link_libraries(
+            PhysXSharpNative
+            
+            libLowLevelAABBCHECKED.a
+            libSimulationControllerCHECKED.a
+            libSceneQueryCHECKED.a
+            libPhysX3VehicleCHECKED.a
+            libPhysX3ExtensionsCHECKED.a
+            libPhysX3CookingCHECKED.a
+            libPhysX3CommonCHECKED.a
+            libPhysX3CHECKED.a
+            libPhysX3CharacterKinematicCHECKED.a
+            libLowLevelParticlesCHECKED.a
+            libLowLevelDynamicsCHECKED.a
+            libLowLevelClothCHECKED.a
+            libLowLevelCHECKED.a
+            
+            libPxTaskCHECKED.a
+            libPxPvdSDKCHECKED.a
+            libPxFoundationCHECKED.a
+            libPsFastXmlCHECKED.a
+            
 			Threads::Threads
 			${CMAKE_DL_LIBS})
 endif(MACOS)

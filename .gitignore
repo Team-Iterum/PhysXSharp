@@ -405,9 +405,15 @@ MigrationBackup/
 # End of https://www.gitignore.io/api/c++,cmake,visualstudio
 
 PhysXSharpNative/out
+
 .DS_Store
+
 PhysXSharpNative/cmake-build-*
+
 .idea
+
 PhysXSharpNative/PhysXSharpNative.xcodeproj
 PhysXSharpNative/CMakeSettings.json
+
+PhysXSharpNative/build
 MeshUtility/build

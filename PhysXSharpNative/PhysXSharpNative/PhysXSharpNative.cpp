@@ -191,7 +191,7 @@ void setupCommonCookingParams(PxCookingParams& params, bool skipMeshCleanup, boo
 
 // Creates a triangle mesh using BVH34 midphase with different settings.
 void createBV34TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* vertices, PxU32 numTriangles, const PxU32* indices,
-    bool skipMeshCleanup, bool skipEdgeData, bool inserted, const PxU32 numTrisPerLeaf)
+    bool skipMeshCleanup, bool skipEdgeData, const PxU32 numTrisPerLeaf)
 {
     
 
@@ -213,22 +213,9 @@ void createBV34TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 
     // Cooking mesh with less triangles per leaf produces larger meshes with better runtime performance
     // and worse cooking performance. Cooking time is better when more triangles per leaf are used.
-    params.midphaseDesc.mBVH34Desc.numPrimsPerLeaf = numTrisPerLeaf;
+    params.midphaseDesc.mBVH34Desc.numTrisPerLeaf = numTrisPerLeaf;
 
     gCooking->setParams(params);
-
-#if defined(PX_CHECKED) || defined(PX_DEBUG)
-    // If DISABLE_CLEAN_MESH is set, the mesh is not cleaned during the cooking.
-    // We should check the validity of provided triangles in debug/checked builds though.
-    if (skipMeshCleanup)
-    {
-        if(!gCooking->validateTriangleMesh(meshDesc))
-        {
-            printf("Error validateTriangleMesh");
-            return;
-        }
-    }
-#endif // DEBUG
     
     PxDefaultFileOutputStream outBuffer(name);
     gCooking->cookTriangleMesh(meshDesc, outBuffer);
@@ -247,7 +234,7 @@ void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, ui
 {
     // Favor runtime speed, cleaning the mesh and precomputing active edges. Store the mesh in a stream.
     // These are the default settings, suitable for offline cooking.
-    createBV34TriangleMesh(name, pointsCount, vertices, triCount, indices, false, false, false, 4);
+    createBV34TriangleMesh(name, pointsCount, vertices, triCount, indices, false, false, 4);
 }
 
 long loadTriangleMesh(const char* name)
@@ -471,7 +458,7 @@ EXPORT void setRigidDynamicMaxLinearVelocity(long ref, float v)
 {
 	lock_step()
 	
-	refPxRigidDynamics[ref]->setMaxLinearVelocity(v);
+	//refPxRigidDynamics[ref]->setMaxLinearVelocity(v);
 }
 EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
 {
@@ -510,7 +497,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 {
 	lock_step()
 
-	return refPxRigidDynamics[ref]->getMaxLinearVelocity();
+    return 0;//refPxRigidDynamics[ref]->getMaxLinearVelocity();
 }
 
 
@@ -528,9 +515,6 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
     rigid->userData = reinterpret_cast<void*>(insertRef);
     
 	rigid->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
-    
-	rigid->setRigidBodyFlag(PxRigidBodyFlag::eRETAIN_ACCELERATIONS, retain);
-
 	if(!kinematic)
 		rigid->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, ccd);
 
@@ -720,11 +704,11 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v6");
+ 	debugLog("init physics native library v7 [physx 3.4 fork]");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
-	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
+	gFoundation = PxCreateFoundation(0x01000000, gAllocator, *gErrorCallback);
 
 	PxTolerancesScale scale;
 	scale.length = toleranceLength;        // typical length of an object
@@ -735,8 +719,8 @@ void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float 
 	if(isCreatePvd)
 	{
 		gPvd = PxCreatePvd(*gFoundation);
-		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
-		gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
+		PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 300);
+        gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
 	}
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale,true,gPvd);

@@ -38,7 +38,7 @@ set(SHARP_NATIVE_SDK "../PhysXSharpNative/")
 set(PHYSX_SDK "../PhysX")
 
 include_directories("${PHYSX_SDK}/pxshared/include")
-include_directories("${PHYSX_SDK}/physx/include")
+include_directories("${PHYSX_SDK}/PhysX_3.4/include")
 
 include_directories("${SHARP_NATIVE_SDK}/PhysXSharpNative")
 
