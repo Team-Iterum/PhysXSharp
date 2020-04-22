@@ -127,5 +127,5 @@ if (MACOS)
 
 		${CMAKE_DL_LIBS}
 	)
-endif (LINUX)
+endif (MACOS)
 

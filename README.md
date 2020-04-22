@@ -2,27 +2,28 @@ Build instructions
 ----------------
 
 ### Required software
-- Linux / MacOS / Windows 10 with WSL
-- cmake
-
-### PhysX prepare
-
-1. Update `git submodule`
-2. Required presets changes
-```xml
-<cmakeSwitch name="PX_BUILDSNIPPETS" value="False" comment="Generate the snippets" />
-<cmakeSwitch name="PX_BUILDPUBLICSAMPLES" value="False" comment="Generate the samples projects" />
-
-<cmakeSwitch name="PX_GENERATE_STATIC_LIBRARIES" value="False" comment="Generate static libraries" />
-```
-
-### WSL
-
-1) Run `generate_projects.sh`
-2) Run `cd PhysX/physx/compiler/linux-release && make`
-3) **IMPORTANT** Copy physx compiled shared and static libraries to `/usr/sbin`
-3) Open `PhysXSharpNative` in **CLion** and run build configuration *Release-WSL* 
+- Linux / MacOS
+- CMake
+- g++, clang
 
 ### Linux
+
+```bash
+cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3CharacterKinematic_x64.so /root/libs  
+cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3Common_x64.so             /root/libs  
+cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3Cooking_x64.so            /root/libs  
+cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3_x64.so                   /root/libs  
+
+cp ../../PhysX/PxShared/bin/linux64/libPxFoundation_x64.so              /root/libs  
+cp ../../PhysX/PxShared/bin/linux64/libPxPvdSDK_x64.so                  /root/libs  
+
+cp /root/libs/* /root/deploy
+```
+
+*App launch*  
+
+```bash
+LD_LIBRARY_PATH=. ./App
+```
 
 ### MacOS
