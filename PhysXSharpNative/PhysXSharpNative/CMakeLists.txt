@@ -35,7 +35,7 @@ find_package(Threads REQUIRED)
 
 set(PHYSX_SDK "../../PhysX")
 
-include_directories("${PHYSX_SDK}/PxShared/Include")
+include_directories("${PHYSX_SDK}/PxShared/include")
 include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 
 if (MACOS)
