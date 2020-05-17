@@ -32,7 +32,7 @@ jobs:
         mkdir /home/runner/work/build-zip
     - uses: montudor/action-zip@v0.1.0
       with:
-        args: zip -qq -r /home/runner/work/build-zip/build.zip /home/runner/work/build/
+        args: zip -qq -r /home/runner/work/build-zip/build.zip . -i /home/runner/work/build/
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
