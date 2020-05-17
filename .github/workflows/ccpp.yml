@@ -15,6 +15,10 @@ jobs:
     - name: get-cmake
       uses: lukka/get-cmake@v3.17.2
     - uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: |
+        git submodule sync
+        git submodule update --init --recursive
     - name: cmake
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; cmake .
     - name: make
