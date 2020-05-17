@@ -28,7 +28,7 @@ jobs:
     - name: copy
       run: cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
     - name: copy 2
-      run: cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/**/*.so /home/runner/work/build
+      run: cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
     - name: Zip Release
       uses: TheDoctor0/zip-release@v0.3.0
       with:
