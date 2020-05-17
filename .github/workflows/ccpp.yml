@@ -23,11 +23,12 @@ jobs:
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; cmake .
     - name: make
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; make
+    - name: mkdir build
+      run: mkdir /home/runner/work/build
     - name: copy
-      run: |
-        mkdir /home/runner/work/build
-        cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
-        cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/**/*.so /home/runner/work/build
+      run: cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
+    - name: copy 2
+      run: cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/**/*.so /home/runner/work/build
     - name: Zip Release
       uses: TheDoctor0/zip-release@v0.3.0
       with:
