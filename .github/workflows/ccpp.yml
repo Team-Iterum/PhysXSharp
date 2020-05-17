@@ -23,3 +23,21 @@ jobs:
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; cmake .
     - name: make
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; make
+    - name: copy
+      run: |
+        mkdir /home/runner/work/build
+        cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
+        cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/**/*.so /home/runner/work/build
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@v0.3.0
+      with:
+        # Filename for archive
+        filename: /home/runner/work/build/build.zip
+        # Base path for archive files
+        path: /home/runner/work/build
+        # Working directory before zipping
+        directory: /home/runner/work/build
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        path: /home/runner/work/build/build.zip
