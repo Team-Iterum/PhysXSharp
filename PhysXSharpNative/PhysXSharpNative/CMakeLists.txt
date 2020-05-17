@@ -33,8 +33,8 @@ if (MACOS)
 endif (MACOS)
 
 if (LINUX)
-	link_directories("Prebuilt/physx3.4_linux64/release/lib/")
-	link_directories("Prebuilt/physx3.4_linux64/release/bin/")
+	link_directories("../../Prebuilt/physx3.4_linux64/release/lib/")
+	link_directories("../../Prebuilt/physx3.4_linux64/release/bin/")
 
 	link_libraries(
 
