@@ -24,21 +24,14 @@ jobs:
     - name: make
       run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; make
     - name: mkdir build
-      run: mkdir /home/runner/work/build
-    - name: copy
-      run: cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
-    - name: copy 2
-      run: cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
-    - name: Zip Release
-      uses: TheDoctor0/zip-release@v0.3.0
+      run: |
+        mkdir /home/runner/work/build
+        cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
+        cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
+    - uses: montudor/action-zip@v0.1.0
       with:
-        # Filename for archive
-        filename: /home/runner/work/build/build.zip
-        # Base path for archive files
-        path: /home/runner/work/build
-        # Working directory before zipping
-        directory: /home/runner/work/build
+        args: zip -qq -r /home/runner/work/build.zip /home/runner/work/build
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
-        path: /home/runner/work/build/build.zip
+        path: /home/runner/work/build.zip
