@@ -1,3 +1,7 @@
+# PhysXSharpNative
+
+![PhysXSharpNative](https://github.com/Team-Iterum/PhysXSharp/workflows/C/C++%20CI/badge.svg)
+
 Build instructions
 ----------------
 
