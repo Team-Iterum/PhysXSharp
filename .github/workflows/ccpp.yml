@@ -16,6 +16,6 @@ jobs:
       uses: lukka/get-cmake@v3.17.2
     - uses: actions/checkout@v2
     - name: cmake
-      run: cd /home/runner/work/PhysXSharp/PhysXSharp; cmake .
+      run: cd /home/runner/work/PhysXSharp/PhysXSharpNative; cmake .
     - name: make
-      run: cd /home/runner/work/PhysXSharp/PhysXSharp; make
+      run: cd /home/runner/work/PhysXSharp/PhysXSharpNative; make
