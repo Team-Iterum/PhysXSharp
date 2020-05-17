@@ -29,10 +29,14 @@ jobs:
         cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
         cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
         ls /home/runner/work/build
-        mkdir /home/runner/work/build-zip
-    - uses: montudor/action-zip@v0.1.0
+            mkdir /home/runner/work/build-zip
+    - name: Easy Zip Files
+      uses: papeloto/action-zip@v1
       with:
-        args: zip -qq -r /home/runner/work/build-zip/build.zip . -i /home/runner/work/build/
+        # Files or directories to zip
+        files: /home/runner/work/build/
+        # Name of output zip file
+        dest: /home/runner/work/build-zip/build.zip
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
