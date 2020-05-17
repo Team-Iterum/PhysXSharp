@@ -20,25 +20,24 @@ jobs:
         git submodule sync
         git submodule update --init --recursive
     - name: cmake
-      run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; cmake .
+      run: cd PhysXSharpNative; cmake .
     - name: make
-      run: cd /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative; make
+      run: cd PhysXSharpNative; make
     - name: mkdir build
       run: |
-        mkdir /home/runner/work/build
-        cp /home/runner/work/PhysXSharp/PhysXSharp/PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so /home/runner/work/build
-        cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
-        cd ~
+        mkdir build
         mkdir build-zip
+        cp PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so build
+        cp -r Prebuilt/physx3.4_linux64/release/bin/* build
     - name: Easy Zip Files
       uses: papeloto/action-zip@v1
       with:
         # Files or directories to zip
-        files: ./work/build/
+        files: build/
         # Name of output zip file
-        dest: ./build-zip/build.zip
+        dest: build.zip
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
         name: build
-        path: build-zip
+        path: ${{ github.workspace }}/build.zip
