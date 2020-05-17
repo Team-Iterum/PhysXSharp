@@ -30,12 +30,11 @@ jobs:
         cp -r /home/runner/work/PhysXSharp/PhysXSharp/Prebuilt/physx3.4_linux64/release/bin/* /home/runner/work/build
         cd ~
         mkdir build-zip
-        pwd   
     - name: Easy Zip Files
       uses: papeloto/action-zip@v1
       with:
         # Files or directories to zip
-        files: ./build/
+        files: ./work/build/
         # Name of output zip file
         dest: ./build-zip/build.zip
     - name: Upload a Build Artifact
