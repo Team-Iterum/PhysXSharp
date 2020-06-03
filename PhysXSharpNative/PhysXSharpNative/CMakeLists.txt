@@ -28,8 +28,7 @@ include_directories("${PHYSX_SDK}/PxShared/include")
 include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 
 if (MACOS)
-	link_directories("${PHYSX_SDK}/PhysX_3.4/Lib/osx64/")
-    link_directories("${PHYSX_SDK}/PxShared/Lib/osx64/")
+    link_directories("../../Prebuilt/physx3.4_osx64/libChecked/")
 endif (MACOS)
 
 if (LINUX)
@@ -99,13 +98,13 @@ endif (LINUX)
 if (MACOS)
 	target_link_libraries(PhysXSharpNative
 	    
-	    libPhysX3CharacterKinematic_x64.so
-		libPhysX3Common_x64.so
-		libPhysX3Cooking_x64.so
-		libPhysX3_x64.so	
+	    libPhysX3CharacterKinematic.a
+		libPhysX3Common.a
+		libPhysX3Cooking.a
+		libPhysX3.a
 
-		libPxFoundation_x64.so
-		libPxPvdSDK_x64.so
+		libPxFoundation.a
+		libPxPvdSDK.a
 
 		libLowLevel.a
 		libLowLevelAABB.a

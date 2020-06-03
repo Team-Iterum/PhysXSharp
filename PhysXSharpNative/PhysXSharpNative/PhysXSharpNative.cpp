@@ -503,7 +503,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -536,6 +536,16 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
         triggerShape->setSimulationFilterData(filterData);
 
     }
+    else
+   {
+       PxFilterData filterData;
+       filterData.word1 = word;
+       
+       PxShape* shape;
+       rigid->getShapes(&shape, 1);
+       
+       shape->setSimulationFilterData(filterData);
+   }
     
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
@@ -639,7 +649,13 @@ static PxFilterFlags filterShader(
         //pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
     }
     
-	return PxFilterFlag::eDEFAULT;
+    if(filterData0.word1 == filterData1.word1)
+    {
+        return PxFilterFlag::eSUPPRESS;
+        //pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
+    }
+    
+    return PxFilterFlag::eDEFAULT;
 }
 
 
@@ -650,9 +666,9 @@ EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trigger
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = ToPxVec3(gravity);
-	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
-
-	//sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM | PxSceneFlag::eENABLE_KINEMATIC_PAIRS;
+    sceneDesc.kineKineFilteringMode = physx::PxPairFilteringMode::eKEEP;
+    
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
@@ -704,7 +720,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v7 [physx 3.4 fork]");
+ 	debugLog("init physics native library v8 [physx 3.4 fork]");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
