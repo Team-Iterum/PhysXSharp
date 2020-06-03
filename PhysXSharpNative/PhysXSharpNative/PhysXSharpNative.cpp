@@ -525,27 +525,18 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
 
 	setupGeometryType(geoType, refGeo, rigid);
 	
-    if(isTrigger)
-    {
-        PxShape* triggerShape;
-        rigid->getShapes(&triggerShape, 1);
+    
+    PxShape* triggerShape;
+    rigid->getShapes(&triggerShape, 1);
         
-        PxFilterData filterData;
-        filterData.word0 = 1;
-        
-        triggerShape->setSimulationFilterData(filterData);
+    PxFilterData filterData;
+    
+    if(isTrigger) filterData.word0 = 1;
+    
+    filterData.word1 = word;
+    
+    triggerShape->setSimulationFilterData(filterData);
 
-    }
-    else
-   {
-       PxFilterData filterData;
-       filterData.word1 = word;
-       
-       PxShape* shape;
-       rigid->getShapes(&shape, 1);
-       
-       shape->setSimulationFilterData(filterData);
-   }
     
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
@@ -650,10 +641,10 @@ static PxFilterFlags filterShader(
     }
     
     if(filterData0.word1 == filterData1.word1)
-   {
+    {
        pairFlags &= ~PxPairFlag::eSOLVE_CONTACT;
        return PxFilterFlag::eKILL;
-   }
+    }
     
     
     return PxFilterFlag::eDEFAULT;
