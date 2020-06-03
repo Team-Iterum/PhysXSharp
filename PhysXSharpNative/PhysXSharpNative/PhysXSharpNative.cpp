@@ -650,10 +650,11 @@ static PxFilterFlags filterShader(
     }
     
     if(filterData0.word1 == filterData1.word1)
-    {
-        return PxFilterFlag::eSUPPRESS;
-        //pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-    }
+   {
+       pairFlags &= ~PxPairFlag::eSOLVE_CONTACT;
+       return PxFilterFlag::eKILL;
+   }
+    
     
     return PxFilterFlag::eDEFAULT;
 }
@@ -666,9 +667,7 @@ EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trigger
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = ToPxVec3(gravity);
-	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM | PxSceneFlag::eENABLE_KINEMATIC_PAIRS;
-    sceneDesc.kineKineFilteringMode = physx::PxPairFilteringMode::eKEEP;
-    
+	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
