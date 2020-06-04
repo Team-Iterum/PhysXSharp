@@ -290,27 +290,30 @@ EXPORT void cleanupGeometry(long ref)
 	refSharedPxGeometrys.erase(ref);
 }
 
-void setupGeometryType(int type, long refGeo, PxRigidActor* rigid)
+void setupGeometryType(int type, int refGeoCount, long refGeo[], PxRigidActor* rigid)
 {
-	if(type == 1)
-	{
-		PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo], *gMaterial);
-	}
-	else if(type == 2)
-	{
-		PxConvexMeshGeometry geo;
-		geo.convexMesh = refPxConvexMeshs[refGeo];
-		
-		PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
-	}
-	else if(type == 3)
-	{
-		PxTriangleMeshGeometry geo;
-		geo.triangleMesh = refPxTriangleMeshs[refGeo];
-		
-		PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
-        
-	}
+    for (int i = 0; i < refGeoCount; i++)
+    {
+        if(type == 1)
+        {
+            PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo[i]], *gMaterial);
+        }
+        else if(type == 2)
+        {
+            PxConvexMeshGeometry geo;
+            geo.convexMesh = refPxConvexMeshs[refGeo[i]];
+            
+            PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
+        }
+        else if(type == 3)
+        {
+            PxTriangleMeshGeometry geo;
+            geo.triangleMesh = refPxTriangleMeshs[refGeo[i]];
+            
+            PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
+            
+        }
+    }
 }
 
 /// RIGID STATIC
@@ -326,7 +329,8 @@ EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 p
 	refPxRigidStatics.insert({insertRef, rigid});
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
-	setupGeometryType(geoType, refGeo, rigid);
+    long refGeoArr[] = { refGeo };
+	setupGeometryType(geoType, 1, refGeoArr, rigid);
 	
     if(isTrigger)
     {
@@ -503,7 +507,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
+EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -523,7 +527,7 @@ EXPORT long createRigidDynamic(int geoType, long refGeo, long refScene, bool kin
     
 	rigid->setMass(mass);
 
-	setupGeometryType(geoType, refGeo, rigid);
+	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
 	
     
     PxShape* triggerShape;
