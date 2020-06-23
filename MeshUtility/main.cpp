@@ -42,6 +42,8 @@ int main (int argc, const char* argv[])
         
         while (getline(file, str))
         {
+            if(str.length() == 0) continue;
+            
             // skip comments
             if(str.substr(2) == "//") continue;
             
