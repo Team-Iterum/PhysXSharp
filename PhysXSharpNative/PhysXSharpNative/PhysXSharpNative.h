@@ -48,7 +48,14 @@ struct APIQuat
     float w;
 };
 
-typedef void (*OverlapCallback)(long t1);
+struct APITransform
+{
+    APIQuat q;
+    APIVec3 p;
+};
+
+typedef void (*OverlapCallback)(int index, long t1);
+typedef void (*RaycastCallback)(int index, long t1);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
@@ -58,10 +65,11 @@ typedef void (*TriggerReportCallbackFunc)(const long ref0, const long ref1);
 #define ToPxVec3(v) physx::PxVec3(v.x, v.y, v.z)
 #define ToPxVec3d(v) physx::PxExtendedVec3(v.x, v.y, v.z)
 #define ToPxQuat(q) physx::PxQuat(q.x, q.y, q.z, q.w)
-
+#define ToPxTrans(t) PxTransform(ToPxVec3(t.p), ToPxQuat(t.q))
 #define ToVec3(v) { v.x, v.y, v.z }
 #define ToVec3d(v) { v.x, v.y, v.z }
 #define ToQuat(q) { q.x, q.y, q.z, q.w }
+#define ToTrans(t) { ToQuat(t.q), ToVec3(t.p) }
 
 #define PX_RELEASE(x) if(x) { x->release(); x = nullptr; }
 #define refMap(x) map<long, x*> ref##x##s; long refCount##x;
@@ -98,7 +106,11 @@ DebugLogErrorFunc debugLogError;
 #endif
 
 
-typedef physx::PxOverlapBuffer OverlapBuffer;
+typedef physx::PxOverlapBufferN<1000> OverlapBuffer1000;
+typedef physx::PxRaycastBufferN<10> RaycastBuffer10;
+
+typedef std::shared_ptr<OverlapBuffer1000> OverlapBuffer;
+typedef std::shared_ptr<RaycastBuffer10> RaycastBuffer;
 
 typedef std::shared_ptr<physx::PxGeometry> SharedPxGeometry;
 

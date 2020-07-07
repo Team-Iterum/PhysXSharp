@@ -26,6 +26,7 @@ map<long, std::shared_ptr<ContactReport>> refContactReports;
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
 
+refMapNonPtr(RaycastBuffer)
 refMapNonPtr(OverlapBuffer)
 refMapNonPtr(SharedPxGeometry);
 
@@ -44,10 +45,6 @@ PxMaterial* gMaterial	= nullptr;
 std::mutex step_mutex;
 #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
 
-PxOverlapBufferN<1000> buffer;
-
-std::thread workerThread;
-
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
 {
@@ -65,23 +62,73 @@ EXPORT void setControllerDirection(long ref, APIVec3 dir)
 }
 
 
-EXPORT int sceneOverlap(long refScene, long refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT long createRaycastBuffer10()
 {
-	lock_step()
-	
-	refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
-	
-	for (PxU32 i = 0; i < buffer.nbTouches; ++i)
-	{
-		const auto touch = buffer.touches[i];
-	 	const auto ref = reinterpret_cast<long>(touch.actor->userData);
-		
-		callback(ref);
-	}
+    lock_step()
+    const auto insertRef = refCountRaycastBuffer++;
 
-	return buffer.nbTouches;
-	
+    RaycastBuffer buffer = std::make_shared<RaycastBuffer10>();
+    
+    refRaycastBuffers.insert({insertRef, buffer});
+    
+    return insertRef;
 }
+
+
+
+EXPORT long createOverlapBuffer1000()
+{
+    lock_step()
+    const auto insertRef = refCountOverlapBuffer++;
+
+    OverlapBuffer buffer = std::make_shared<OverlapBuffer1000>();
+    
+    refOverlapBuffers.insert({insertRef, buffer});
+    
+    return insertRef;
+
+}
+
+
+EXPORT int sceneRaycast(long refScene, long refRaycastBuffer, APIVec3 origin, APIVec3 unitDir, float distance, RaycastCallback callback)
+{
+    lock_step()
+    
+    auto buffer = *refRaycastBuffers[refRaycastBuffer];
+    refPxScenes[refScene]->raycast(ToVec3(origin), ToVec3(unitDir), distance, buffer);
+    
+    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
+    {
+        const auto touch = buffer.touches[i];
+        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        
+        callback(i, ref);
+    }
+
+    return buffer.nbTouches;
+}
+
+
+EXPORT int sceneOverlap(long refScene, long refOverlapBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+{
+    lock_step()
+    
+    auto buffer = *refOverlapBuffers[refOverlapBuffer];
+    
+    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
+    
+    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
+    {
+        const auto touch = buffer.touches[i];
+        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        
+        callback(i, ref);
+    }
+
+    return buffer.nbTouches;
+    
+}
+
 EXPORT long createSphereGeometry(float radius)
 {
 	const SharedPxGeometry geo = std::make_shared<PxSphereGeometry>(radius);
@@ -377,6 +424,7 @@ EXPORT APIQuat getRigidStaticRotation(long ref)
 	return ToQuat(refPxRigidStatics[ref]->getGlobalPose().q);
 }
 
+
 // set
 EXPORT void setRigidStaticPosition(long ref, APIVec3 p)
 {
@@ -393,19 +441,19 @@ EXPORT void setRigidStaticRotation(long ref, APIQuat q)
 
 /// RIGID DYNAMIC
 // set
-EXPORT void setRigidDynamicTransform(long ref, APIVec3 pos, APIQuat q)
+EXPORT void setRigidDynamicTransform(long ref, APITransform t)
 {
 	lock_step()
 
-	refPxRigidDynamics[ref]->setGlobalPose(PxTransform(ToVec3(pos), ToQuat(q)));
+	refPxRigidDynamics[ref]->setGlobalPose(ToPxTrans(t));
 }
 
 
-EXPORT void setRigidDynamicKinematicTarget(long ref, APIVec3 p, APIQuat q)
+EXPORT void setRigidDynamicKinematicTarget(long ref, APITransform t)
 {
 	lock_step()
 	
-	refPxRigidDynamics[ref]->setKinematicTarget(PxTransform(ToPxVec3(p), ToPxQuat(q)));
+	refPxRigidDynamics[ref]->setKinematicTarget(ToPxTrans(t));
 }
 
 
@@ -472,18 +520,12 @@ EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
 }
 
 // get
-EXPORT APIVec3 getRigidDynamicPosition(long ref)
+EXPORT APITransform getRigidDynamicTransform(long ref)
 {
 	lock_step()
-
-	return ToVec3(refPxRigidDynamics[ref]->getGlobalPose().p);
+    return ToTrans(refPxRigidDynamics[ref]->getGlobalPose());
 }
-EXPORT APIQuat getRigidDynamicRotation(long ref)
-{
-	lock_step()
 
-	return ToQuat(refPxRigidDynamics[ref]->getGlobalPose().q);
-}
 
 EXPORT APIVec3 getRigidDynamicAngularVelocity(long ref)
 {
@@ -692,7 +734,7 @@ EXPORT void stepPhysics(long ref, float dt)
 {
 	lock_step()
 
-	refPxScenes[ref]->simulate(dt);
+    refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
     
 }
@@ -714,7 +756,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.1.0");
+ 	debugLog("init physics native library v1.3.0");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
