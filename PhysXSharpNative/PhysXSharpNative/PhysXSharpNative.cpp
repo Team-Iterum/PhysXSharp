@@ -518,6 +518,26 @@ EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
 	
 	refPxRigidDynamics[ref]->setMaxAngularVelocity(v);
 }
+EXPORT void setRigidDynamicWord(long ref, uint32_t word)
+{
+    lock_step()
+    
+    PxShape* shape;
+    refPxRigidDynamics[ref]->getShapes(&shape, 1);
+    
+    PxFilterData filterData;
+    filterData.word1 = word;
+    
+    shape->setSimulationFilterData(filterData);
+    
+}
+EXPORT void setRigidDynamicDisable(long ref, bool disabled)
+{
+    lock_step()
+    const auto flags = refPxRigidDynamics[ref]->getActorFlags();
+    refPxRigidDynamics[ref]->setActorFlags(disabled ? flags | PxActorFlag::eDISABLE_SIMULATION :
+                                                     flags & ~PxActorFlag::eDISABLE_SIMULATION);
+}
 
 // get
 EXPORT APITransform getRigidDynamicTransform(long ref)
@@ -580,6 +600,7 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
     if(isTrigger) filterData.word0 = 1;
     
     filterData.word1 = word;
+
     
     triggerShape->setSimulationFilterData(filterData);
 
@@ -587,6 +608,8 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
 }
+
+
 EXPORT void destroyRigidDynamic(long ref)
 {
 	lock_step()
@@ -756,7 +779,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.3.0");
+ 	debugLog("init physics native library v1.4.0");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
