@@ -525,7 +525,7 @@ EXPORT void setRigidDynamicWord(long ref, uint32_t word)
     PxShape* shape;
     refPxRigidDynamics[ref]->getShapes(&shape, 1);
     
-    PxFilterData filterData;
+    auto filterData = shape->getSimulationFilterData();
     filterData.word1 = word;
     
     shape->setSimulationFilterData(filterData);
