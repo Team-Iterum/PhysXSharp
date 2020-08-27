@@ -592,25 +592,23 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
 	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
 	
     
-    PxShape* shapesBuffer;
-    rigid->getShapes(&shapesBuffer, refGeoCount);
+    PxShape* shapesBuffer[refGeoCount];
+    rigid->getShapes(shapesBuffer, refGeoCount);
+
         
     PxFilterData filterData;
     // word0 - common word
     filterData.word1 = word;
     // word0 - trigger word
-    if(isTrigger)filterData.word0 = 1;
+    if(isTrigger) filterData.word0 = 1;
 
     for (PxU32 i = 0; i < refGeoCount; ++i)
     {
-        PxShape* shape = &shapesBuffer[i];
+        PxShape* shape = shapesBuffer[i];
         
         shape->setSimulationFilterData(filterData);
-        shape->userData = rigid;
     }
 
-
-    
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
 }
@@ -785,7 +783,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.4.1");
+ 	debugLog("init physics native library v1.4.3");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
