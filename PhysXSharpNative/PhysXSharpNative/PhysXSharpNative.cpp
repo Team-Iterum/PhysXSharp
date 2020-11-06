@@ -590,8 +590,7 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
 
 	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
 	
-    
-    PxShape* shapesBuffer[refGeoCount];
+	PxShape** shapesBuffer;
     rigid->getShapes(shapesBuffer, refGeoCount);
 
         
