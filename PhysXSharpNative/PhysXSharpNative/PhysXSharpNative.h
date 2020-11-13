@@ -4,7 +4,7 @@
 #pragma once
 
 
-#define NDEBUG
+//#define NDEBUG
 
 #include <memory>
 #include <string>
@@ -14,8 +14,8 @@
 #include "PxPhysicsAPI.h"
 
 #if defined(_MSC_VER)
-    #define PX_DEBUG 1
-    #define PX_CHECKED 1
+    // #define PX_DEBUG 1
+    // #define PX_CHECKED 1
 #endif
 
 #if defined(_MSC_VER)
@@ -54,13 +54,13 @@ struct APITransform
     APIVec3 p;
 };
 
-typedef void (*OverlapCallback)(int index, long t1);
-typedef void (*RaycastCallback)(int index, long t1);
+typedef void (*OverlapCallback)(int index, int64_t t1);
+typedef void (*RaycastCallback)(int index, int64_t t1);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
-typedef void (*ContactReportCallbackFunc)(const long ref0, const long ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation);
-typedef void (*TriggerReportCallbackFunc)(const long ref0, const long ref1);
+typedef void (*ContactReportCallbackFunc)(const int64_t ref0, const int64_t ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation);
+typedef void (*TriggerReportCallbackFunc)(const int64_t ref0, const int64_t ref1);
 
 #define ToPxVec3(v) physx::PxVec3(v.x, v.y, v.z)
 #define ToPxVec3d(v) physx::PxExtendedVec3(v.x, v.y, v.z)
@@ -72,8 +72,8 @@ typedef void (*TriggerReportCallbackFunc)(const long ref0, const long ref1);
 #define ToTrans(t) { ToQuat(t.q), ToVec3(t.p) }
 
 #define PX_RELEASE(x) if(x) { x->release(); x = nullptr; }
-#define refMap(x) map<long, x*> ref##x##s; long refCount##x;
-#define refMapNonPtr(x) map<long, x> ref##x##s; long refCount##x;
+#define refMap(x) map<int64_t, x*> ref##x##s; int64_t refCount##x;
+#define refMapNonPtr(x) map<int64_t, x> ref##x##s; int64_t refCount##x;
 
 #define insertMapNoUserData(x, y) const auto insertRef = refCount##x++; \
 							      ref##x##s.insert({insertRef, y});
@@ -158,8 +158,8 @@ public:
 
         if(pairHeader.actors[0] != pairHeader.actors[1])
         {
-            long ref0 = reinterpret_cast<const long>(pairHeader.actors[0]->userData);
-            long ref1 = reinterpret_cast<const long>(pairHeader.actors[1]->userData);
+            int64_t ref0 = reinterpret_cast<const int64_t>(pairHeader.actors[0]->userData);
+            int64_t ref1 = reinterpret_cast<const int64_t>(pairHeader.actors[1]->userData);
 
             bool isTrigger = false;
             // Contact information
@@ -168,6 +168,8 @@ public:
             APIVec3 impulse = {0, 0, 0};
             float separation = 100;
 
+            PxRigidActor* actor0;
+            PxRigidActor* actor1;
 
             const physx::PxU32 bufferSize = 32;
             physx::PxContactPairPoint contacts[bufferSize];
@@ -184,14 +186,16 @@ public:
                 auto shape0 = pairs[i].shapes[0];
                 auto shape1 = pairs[i].shapes[1];
                 
-                ref0 = reinterpret_cast<const long>(shape0->getActor()->userData);
-                ref1 = reinterpret_cast<const long>(shape1->getActor()->userData);
+                actor0 = shape0->getActor();
+                actor1 = shape1->getActor();
+                ref0 = reinterpret_cast<const int64_t>(actor0->userData);
+                ref1 = reinterpret_cast<const int64_t>(actor1->userData);
                 
                 if((shape0->getSimulationFilterData().word0 == 1) ||
                    (shape1->getSimulationFilterData().word0 == 1))
                 {
                     isTrigger = true;
-                }
+                }   
                 
 
                 for (int j = 0; j < nbContacts; j++)
@@ -212,6 +216,12 @@ public:
             }
             else
             {
+                auto pose0 = actor0->getGlobalPose();
+                actor0->setGlobalPose(PxTransform(pose0.p - ToPxVec3(normal) * (-separation) * 2, pose0.q));
+
+                auto pose1 = actor1->getGlobalPose();
+                actor1->setGlobalPose(PxTransform(pose1.p - ToPxVec3(normal) * (separation) * 2, pose1.q));
+
                 callback(ref0, ref1, normal, position, impulse, separation);
             }
         }
@@ -234,4 +244,4 @@ EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2);
 
 EXPORT void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func);
 
-EXPORT long loadTriangleMesh(const char* name);
+EXPORT int64_t loadTriangleMesh(const char* name);

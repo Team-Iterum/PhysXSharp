@@ -29,7 +29,7 @@ include_directories("${PHYSX_SDK}/PxShared/include")
 include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 
 if (MACOS)
-    link_directories("../../Prebuilt/physx3.4_osx64/libChecked/")
+    link_directories("../../Prebuilt/physx3.4_osx64/lib/")
 endif (MACOS)
 
 if (WIN)
@@ -37,27 +37,27 @@ if (WIN)
 
     link_libraries(
 
-		PhysX3CharacterKinematicPROFILE_x64.dll
-		PhysX3CommonPROFILE_x64.dll
-		PhysX3CookingPROFILE_x64.dll
-		PhysX3PROFILE_x64.dll
+		PhysX3CharacterKinematicCHECKED_x64.dll
+		PhysX3CommonCHECKED_x64.dll
+		PhysX3CookingCHECKED_x64.dll
+		PhysX3CHECKED_x64.dll
 
 
-		PxFoundationPROFILE_x64.lib
-		PxPvdSDKPROFILE_x64.lib
+		PxFoundationCHECKED_x64.lib
+		PxPvdSDKCHECKED_x64.lib
 
-		LowLevelPROFILE.lib
-		LowLevelAABBPROFILE.lib
-		LowLevelClothPROFILE.lib
-		LowLevelDynamicsPROFILE.lib
-		LowLevelParticlesPROFILE.lib
-		PhysX3ExtensionsPROFILE.lib
-		PhysX3VehiclePROFILE.lib
-		SceneQueryPROFILE.lib
-		SimulationControllerPROFILE.lib
+		LowLevelCHECKED.lib
+		LowLevelAABBCHECKED.lib
+		LowLevelClothCHECKED.lib
+		LowLevelDynamicsCHECKED.lib
+		LowLevelParticlesCHECKED.lib
+		PhysX3ExtensionsCHECKED.lib
+		PhysX3VehicleCHECKED.lib
+		SceneQueryCHECKED.lib
+		SimulationControllerCHECKED.lib
 
-		PsFastXmlPROFILE_x64.lib
-		PxTaskPROFILE_x64.lib
+		PsFastXmlCHECKED_x64.lib
+		PxTaskCHECKED_x64.lib
 	)
 
 endif (WIN)
