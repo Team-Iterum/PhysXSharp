@@ -43,7 +43,7 @@ std::shared_ptr<ErrorCallback> gErrorCallback;
 PxMaterial* gMaterial	= nullptr;
 
 std::mutex step_mutex;
-// #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
+#define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
 
 
 EXPORT void charactersUpdate(float elapsed, float minDist)
@@ -446,10 +446,10 @@ EXPORT void setRigidStaticRotation(int64_t ref, APIQuat q)
 
 /// RIGID DYNAMIC
 // set
-EXPORT void setRigidDynamicTransform(int64_t ref, APITransform t)
+EXPORT void setRigidDynamicTransform(int64_t ref, PxTransform t)
 {
 //	lock_step()
-	refPxRigidDynamics.at(ref)->setGlobalPose(ToPxTrans(t));
+	refPxRigidDynamics.at(ref)->setGlobalPose(t);
 }
 
 
@@ -544,21 +544,9 @@ EXPORT void setRigidDynamicDisable(int64_t ref, bool disabled)
 }
 
 // get
-EXPORT APITransform getRigidDynamicTransform(int64_t ref)
+EXPORT PxTransform getRigidDynamicTransform(int64_t ref)
 {
-	// lock_step()
-	/*debugLog(std::to_string(ref).c_str());
-	debugLog(std::to_string(refPxRigidDynamics.begin()->first).c_str());
-
-	auto pose = refPxRigidDynamics.at(ref)->getGlobalPose();*/
-	/*
-	std::stringstream oss;
-	oss << "pose.p: " << std::to_string(pose.p.x) << std::to_string(pose.p.y) << std::to_string(pose.p.z);
-	oss << "pose.q: " << std::to_string(pose.q.x) << std::to_string(pose.q.y) << std::to_string(pose.q.z) << std::to_string(pose.q.w);
-
-	debugLog(oss.str().c_str());*/
-
-    return ToTrans(refPxRigidDynamics.at(ref)->getGlobalPose());
+	return refPxRigidDynamics.at(ref)->getGlobalPose();
 }
 
 
@@ -584,8 +572,10 @@ EXPORT float getRigidDynamicMaxLinearVelocity(int64_t ref)
 
 
 // create
-EXPORT int64_t createRigidDynamic(int geoType, int refGeoCount, int64_t refGeo[], int64_t refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
+EXPORT int64_t createRigidDynamic(int geoType, int refGeoCount, 
+	int64_t refGeo[], int64_t refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
+	lock_step()
 	//debugLog("enter create");
 	//PXS_ASSERT(gPhysics != nullptr)
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToPxVec3(pos), ToPxQuat(quat)));
@@ -810,7 +800,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.4.4");
+ 	debugLog("init physics native library v1.4.5");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	

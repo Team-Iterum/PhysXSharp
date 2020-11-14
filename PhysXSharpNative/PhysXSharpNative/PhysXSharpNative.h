@@ -168,8 +168,6 @@ public:
             APIVec3 impulse = {0, 0, 0};
             float separation = 100;
 
-            PxRigidActor* actor0;
-            PxRigidActor* actor1;
 
             const physx::PxU32 bufferSize = 32;
             physx::PxContactPairPoint contacts[bufferSize];
@@ -186,8 +184,8 @@ public:
                 auto shape0 = pairs[i].shapes[0];
                 auto shape1 = pairs[i].shapes[1];
                 
-                actor0 = shape0->getActor();
-                actor1 = shape1->getActor();
+                auto actor0 = shape0->getActor();
+                auto actor1 = shape1->getActor();
                 ref0 = reinterpret_cast<const int64_t>(actor0->userData);
                 ref1 = reinterpret_cast<const int64_t>(actor1->userData);
                 
@@ -216,12 +214,6 @@ public:
             }
             else
             {
-                auto pose0 = actor0->getGlobalPose();
-                actor0->setGlobalPose(PxTransform(pose0.p - ToPxVec3(normal) * (-separation) * 2, pose0.q));
-
-                auto pose1 = actor1->getGlobalPose();
-                actor1->setGlobalPose(PxTransform(pose1.p - ToPxVec3(normal) * (separation) * 2, pose1.q));
-
                 callback(ref0, ref1, normal, position, impulse, separation);
             }
         }
