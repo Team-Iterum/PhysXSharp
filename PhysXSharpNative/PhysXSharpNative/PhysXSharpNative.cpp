@@ -825,7 +825,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.4.5");
+ 	debugLog("init physics native library v1.4.7");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	

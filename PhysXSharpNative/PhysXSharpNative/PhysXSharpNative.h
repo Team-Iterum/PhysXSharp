@@ -4,7 +4,7 @@
 #pragma once
 
 
-//#define NDEBUG
+#define NDEBUG
 
 #include <memory>
 #include <string>
