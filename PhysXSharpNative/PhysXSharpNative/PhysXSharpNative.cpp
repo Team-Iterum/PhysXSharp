@@ -753,10 +753,35 @@ EXPORT int64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trig
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
 
+	sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
+	
+
 	auto contactReport = std::make_shared<ContactReport>(func, triggerFunc);
     sceneDesc.simulationEventCallback = contactReport.get();
 
 	auto scene = gPhysics->createScene(sceneDesc);
+
+
+	const uint32_t SubDivs = 4;
+	std::vector<PxBounds3> regions(SubDivs * SubDivs);
+
+
+	const PxBounds3 LevelBounds = PxBounds3::centerExtents(PxVec3(PxZero), PxVec3(5000, 5000, 5000));
+
+
+	PxU32 Num = PxBroadPhaseExt::createRegionsFromWorldBounds(regions.data(), LevelBounds, SubDivs, 1);
+	
+
+	for (const PxBounds3& bounds : regions)
+	{
+		PxBroadPhaseRegion Region;
+		Region.bounds = bounds;
+		Region.userData = nullptr;
+		scene->addBroadPhaseRegion(Region);
+	}
+	
+
+	
 
 	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
