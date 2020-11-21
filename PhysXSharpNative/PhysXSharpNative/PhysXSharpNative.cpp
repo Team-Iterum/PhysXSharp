@@ -761,26 +761,22 @@ EXPORT int64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trig
 
 	auto scene = gPhysics->createScene(sceneDesc);
 
+	const float range = 5000.0f;
+	const PxU32 subdiv = 4;
+	const PxVec3 min(-range);
+	const PxVec3 max(range);
+	const PxBounds3 globalBounds(min, max);
 
-	const uint32_t SubDivs = 4;
-	PxBounds3* regions = new PxBounds3[SubDivs * SubDivs];
+	PxBounds3 bounds[256];
+	const PxU32 nbRegions = PxBroadPhaseExt::createRegionsFromWorldBounds(bounds, globalBounds, subdiv);
 
-	const PxBounds3 LevelBounds = PxBounds3::centerExtents(PxVec3(PxZero), PxVec3(5000, 5000, 5000));
-
-
-	PxU32 Num = PxBroadPhaseExt::createRegionsFromWorldBounds(regions, LevelBounds, SubDivs, 1);
-	
-
-	for (int i = 0; i < SubDivs * SubDivs; ++i)
+	for (PxU32 i = 0; i < nbRegions; i++)
 	{
-		const PxBounds3& bounds = regions[i];
-		PxBroadPhaseRegion Region;
-		Region.bounds = bounds;
-		Region.userData = nullptr;
-		scene->addBroadPhaseRegion(Region);
+		PxBroadPhaseRegion region;
+		region.bounds = bounds[i];
+		region.userData = (void*)i;
+		scene->addBroadPhaseRegion(region);
 	}
-	
-	delete regions;
 	
 
 	auto controllerManager = PxCreateControllerManager(*scene, false);
@@ -825,7 +821,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.4.8");
+ 	debugLog("init physics native library v1.4.9");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
