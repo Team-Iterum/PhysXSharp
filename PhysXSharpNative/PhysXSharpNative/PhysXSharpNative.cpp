@@ -579,7 +579,7 @@ EXPORT int64_t createRigidDynamic(int geoType, int refGeoCount,
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToPxVec3(pos), ToPxQuat(quat)));
 
 	const auto insertRef = refOverlap++;
-	refPxRigidDynamics.insert(std::make_pair(insertRef, rigid));
+	refPxRigidDynamics.insert({insertRef, rigid});
 	
     rigid->userData = reinterpret_cast<void*>(insertRef);
     
@@ -807,7 +807,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.5.1");
+ 	debugLog("init physics native library v1.5.2");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
