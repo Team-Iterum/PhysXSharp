@@ -576,13 +576,9 @@ EXPORT int64_t createRigidDynamic(int geoType, int refGeoCount,
 	int64_t refGeo[], int64_t refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
-	//debugLog("enter create");
-	//PXS_ASSERT(gPhysics != nullptr)
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToPxVec3(pos), ToPxQuat(quat)));
-	//PXS_ASSERT(rigid != nullptr)
 
 	const auto insertRef = refOverlap++;
-	//debugLogError(std::to_string(insertRef).c_str());
 	refPxRigidDynamics.insert(std::make_pair(insertRef, rigid));
 	
     rigid->userData = reinterpret_cast<void*>(insertRef);
@@ -595,38 +591,28 @@ EXPORT int64_t createRigidDynamic(int geoType, int refGeoCount,
         rigid->setActorFlags(PxActorFlag::Enum::eDISABLE_GRAVITY);
     
 	rigid->setMass(mass);
-	
-	PXS_ASSERT(refGeoCount != 0)
+
 	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
 	
-	PXS_ASSERT(rigid != nullptr)
-
-	//debugLog("shapesBuffer");
-	PxShape** shapesBuffer = new PxShape * [refGeoCount];
-	//debugLog("getShapes");
+    
+    PxShape* shapesBuffer[refGeoCount];
     rigid->getShapes(shapesBuffer, refGeoCount);
 
-	//debugLog("filterData");
+        
     PxFilterData filterData;
     // word0 - common word
     filterData.word1 = word;
     // word0 - trigger word
     if(isTrigger) filterData.word0 = 1;
 
-	//debugLog("enter loop");
-    for (int i = 0; i < refGeoCount; i++)
+    for (PxU32 i = 0; i < refGeoCount; ++i)
     {
         PxShape* shape = shapesBuffer[i];
         
         shape->setSimulationFilterData(filterData);
     }
-	delete shapesBuffer;
-	//debugLog("exit loop");
 
 	refPxScenes[refScene]->addActor(*rigid);
-
-	//debugLogError(std::to_string(insertRef).c_str());
-	//debugLog("exit create");
 	return insertRef;
 }
 
@@ -821,7 +807,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.5.0");
+ 	debugLog("init physics native library v1.5.1");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
