@@ -753,7 +753,7 @@ EXPORT int64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trig
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
 
-	sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
+	// sceneDesc.broadPhaseType = PxBroadPhaseType::e;
 	
 
 	auto contactReport = std::make_shared<ContactReport>(func, triggerFunc);
@@ -761,7 +761,7 @@ EXPORT int64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trig
 
 	auto scene = gPhysics->createScene(sceneDesc);
 
-	const float range = 5000.0f;
+	/*const float range = 5000.0f;
 	const PxU32 subdiv = 4;
 	const PxVec3 min(-range);
 	const PxVec3 max(range);
@@ -777,7 +777,7 @@ EXPORT int64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trig
 		region.userData = (void*)i;
 		scene->addBroadPhaseRegion(region);
 	}
-	
+	*/
 
 	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
@@ -821,7 +821,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.4.9");
+ 	debugLog("init physics native library v1.5.0");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
