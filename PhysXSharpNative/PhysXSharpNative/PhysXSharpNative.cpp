@@ -27,7 +27,9 @@ refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
 
 refMapNonPtr(RaycastBuffer)
-refMapNonPtr(OverlapBuffer)
+refMapNonPtr(ptrOverlapBuffer1000)
+refMapNonPtr(ptrOverlapBuffer10)
+refMapNonPtr(ptrOverlapBuffer1)
 refMapNonPtr(SharedPxGeometry);
 
 // Global
@@ -79,11 +81,38 @@ EXPORT long createRaycastBuffer10()
 EXPORT long createOverlapBuffer1000()
 {
     lock_step()
-    const auto insertRef = refCountOverlapBuffer++;
+    const auto insertRef = refCountptrOverlapBuffer1000++;
 
-    OverlapBuffer buffer = std::make_shared<OverlapBuffer1000>();
+    ptrOverlapBuffer1000 buffer = std::make_shared<OverlapBuffer1000>();
     
-    refOverlapBuffers.insert({insertRef, buffer});
+    refptrOverlapBuffer1000s.insert({insertRef, buffer});
+    
+    return insertRef;
+
+}
+
+EXPORT long createOverlapBuffer1()
+{
+    lock_step()
+    const auto insertRef = refCountptrOverlapBuffer1++;
+
+    ptrOverlapBuffer1 buffer = std::make_shared<OverlapBuffer1>();
+    
+    refptrOverlapBuffer1s.insert({insertRef, buffer});
+    
+    return insertRef;
+
+}
+
+
+EXPORT long createOverlapBuffer10()
+{
+    lock_step()
+    const auto insertRef = refCountptrOverlapBuffer10++;
+
+    ptrOverlapBuffer10 buffer = std::make_shared<OverlapBuffer10>();
+    
+    refptrOverlapBuffer10s.insert({insertRef, buffer});
     
     return insertRef;
 
@@ -109,11 +138,11 @@ EXPORT int sceneRaycast(long refScene, long refRaycastBuffer, APIVec3 origin, AP
 }
 
 
-EXPORT int sceneOverlap(long refScene, long refOverlapBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap1000(long refScene, long refBuffer, int bufferCount, long refGeo, APIVec3 pos, OverlapCallback callback)
 {
     lock_step()
     
-    auto buffer = *refOverlapBuffers[refOverlapBuffer];
+    auto buffer = *refptrOverlapBuffer1000s[refBuffer];
     
     refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
     
@@ -128,6 +157,48 @@ EXPORT int sceneOverlap(long refScene, long refOverlapBuffer, long refGeo, APIVe
     return buffer.nbTouches;
     
 }
+
+EXPORT int sceneOverlap10(long refScene, long refBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+{
+    lock_step()
+    
+    auto buffer = *refptrOverlapBuffer10s[refBuffer];
+    
+    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
+    
+    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
+    {
+        const auto touch = buffer.touches[i];
+        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        
+        callback(i, ref);
+    }
+
+    return buffer.nbTouches;
+    
+}
+
+
+EXPORT int sceneOverlap1(long refScene, long refBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+{
+    lock_step()
+    
+    auto buffer = *refptrOverlapBuffer1s[refBuffer];
+    
+    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
+    
+    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
+    {
+        const auto touch = buffer.touches[i];
+        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        
+        callback(i, ref);
+    }
+
+    return buffer.nbTouches;
+    
+}
+
 
 EXPORT long createSphereGeometry(float radius)
 {

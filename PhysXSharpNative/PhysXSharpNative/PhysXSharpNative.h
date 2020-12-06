@@ -106,10 +106,14 @@ DebugLogErrorFunc debugLogError;
 #endif
 
 
+typedef physx::PxOverlapBufferN<1> OverlapBuffer1;
+typedef physx::PxOverlapBufferN<10> OverlapBuffer10;
 typedef physx::PxOverlapBufferN<1000> OverlapBuffer1000;
 typedef physx::PxRaycastBufferN<10> RaycastBuffer10;
 
-typedef std::shared_ptr<OverlapBuffer1000> OverlapBuffer;
+typedef std::shared_ptr<OverlapBuffer1> ptrOverlapBuffer1;
+typedef std::shared_ptr<OverlapBuffer10> ptrOverlapBuffer10;
+typedef std::shared_ptr<OverlapBuffer1000> ptrOverlapBuffer1000;
 typedef std::shared_ptr<RaycastBuffer10> RaycastBuffer;
 
 typedef std::shared_ptr<physx::PxGeometry> SharedPxGeometry;
