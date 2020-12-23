@@ -14,7 +14,8 @@ if (APPLE)
 endif(APPLE)
 
 if (MSVC)
-	message(STATUS ">>> Windows NOT SUPPORTED")
+	set(WIN TRUE)
+	message(STATUS ">>> Windows")
 endif (MSVC)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -30,6 +31,36 @@ include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 if (MACOS)
     link_directories("../../Prebuilt/physx3.4_osx64/libChecked/")
 endif (MACOS)
+
+if (WIN)
+    link_directories("../../Prebuilt/physx3.4_win64/")
+
+    link_libraries(
+
+		PhysX3CharacterKinematicPROFILE_x64.dll
+		PhysX3CommonPROFILE_x64.dll
+		PhysX3CookingPROFILE_x64.dll
+		PhysX3PROFILE_x64.dll
+
+
+		PxFoundationPROFILE_x64.lib
+		PxPvdSDKPROFILE_x64.lib
+
+		LowLevelPROFILE.lib
+		LowLevelAABBPROFILE.lib
+		LowLevelClothPROFILE.lib
+		LowLevelDynamicsPROFILE.lib
+		LowLevelParticlesPROFILE.lib
+		PhysX3ExtensionsPROFILE.lib
+		PhysX3VehiclePROFILE.lib
+		SceneQueryPROFILE.lib
+		SimulationControllerPROFILE.lib
+
+		PsFastXmlPROFILE_x64.lib
+		PxTaskPROFILE_x64.lib
+	)
+
+endif (WIN)
 
 if (LINUX)
 	link_directories("../../Prebuilt/physx3.4_linux64/release/lib/")
@@ -124,4 +155,3 @@ if (MACOS)
 		${CMAKE_DL_LIBS}
 	)
 endif (MACOS)
-

@@ -663,7 +663,7 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
 	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
 	
     
-    PxShape* shapesBuffer[refGeoCount];
+	PxShape** shapesBuffer = new PxShape * [refGeoCount];
     rigid->getShapes(shapesBuffer, refGeoCount);
 
         
@@ -679,6 +679,7 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
         
         shape->setSimulationFilterData(filterData);
     }
+	delete shapesBuffer;
 
 	refPxScenes[refScene]->addActor(*rigid);
 	return insertRef;
