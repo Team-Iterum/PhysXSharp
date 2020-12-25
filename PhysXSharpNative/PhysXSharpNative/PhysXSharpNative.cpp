@@ -13,15 +13,15 @@ using namespace physx;
 // Reference lists
 refMap(PxControllerManager)
 
-long refOverlap;
-map<long, PxController*> refPxControllers;
-map<long, PxVec3> refControllersDir;
+uint64_t refOverlap;
+map<uint64_t, PxController*> refPxControllers;
+map<uint64_t, PxVec3> refControllersDir;
 
-map<long, PxRigidStatic*> refPxRigidStatics;
-map<long, PxRigidDynamic*> refPxRigidDynamics;
+map<uint64_t, PxRigidStatic*> refPxRigidStatics;
+map<uint64_t, PxRigidDynamic*> refPxRigidDynamics;
 
 refMap(PxScene)
-map<long, std::shared_ptr<ContactReport>> refContactReports;
+map<uint64_t, std::shared_ptr<ContactReport>> refContactReports;
 
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
@@ -58,13 +58,13 @@ EXPORT void charactersUpdate(float elapsed, float minDist)
 }
 
 
-EXPORT void setControllerDirection(long ref, APIVec3 dir)
+EXPORT void setControllerDirection(uint64_t ref, APIVec3 dir)
 {
 	refControllersDir[ref] = ToPxVec3(dir);
 }
 
 
-EXPORT long createRaycastBuffer10()
+EXPORT uint64_t createRaycastBuffer10()
 {
     lock_step()
     const auto insertRef = refCountRaycastBuffer++;
@@ -78,7 +78,7 @@ EXPORT long createRaycastBuffer10()
 
 
 
-EXPORT long createOverlapBuffer1000()
+EXPORT uint64_t createOverlapBuffer1000()
 {
     lock_step()
     const auto insertRef = refCountptrOverlapBuffer1000++;
@@ -91,7 +91,7 @@ EXPORT long createOverlapBuffer1000()
 
 }
 
-EXPORT long createOverlapBuffer1()
+EXPORT uint64_t createOverlapBuffer1()
 {
     lock_step()
     const auto insertRef = refCountptrOverlapBuffer1++;
@@ -105,7 +105,7 @@ EXPORT long createOverlapBuffer1()
 }
 
 
-EXPORT long createOverlapBuffer10()
+EXPORT uint64_t createOverlapBuffer10()
 {
     lock_step()
     const auto insertRef = refCountptrOverlapBuffer10++;
@@ -119,7 +119,7 @@ EXPORT long createOverlapBuffer10()
 }
 
 
-EXPORT int sceneRaycast(long refScene, long refRaycastBuffer, APIVec3 origin, APIVec3 unitDir, float distance, RaycastCallback callback)
+EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 origin, APIVec3 unitDir, float distance, RaycastCallback callback)
 {
     lock_step()
     
@@ -129,7 +129,7 @@ EXPORT int sceneRaycast(long refScene, long refRaycastBuffer, APIVec3 origin, AP
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
         
         callback(i, ref);
     }
@@ -138,7 +138,7 @@ EXPORT int sceneRaycast(long refScene, long refRaycastBuffer, APIVec3 origin, AP
 }
 
 
-EXPORT int sceneOverlap1000(long refScene, long refBuffer, int bufferCount, long refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap1000(uint64_t refScene, uint64_t refBuffer, int bufferCount, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
 {
     lock_step()
     
@@ -149,7 +149,7 @@ EXPORT int sceneOverlap1000(long refScene, long refBuffer, int bufferCount, long
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
         
         callback(i, ref);
     }
@@ -158,7 +158,7 @@ EXPORT int sceneOverlap1000(long refScene, long refBuffer, int bufferCount, long
     
 }
 
-EXPORT int sceneOverlap10(long refScene, long refBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap10(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
 {
     lock_step()
     
@@ -169,7 +169,7 @@ EXPORT int sceneOverlap10(long refScene, long refBuffer, long refGeo, APIVec3 po
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
         
         callback(i, ref);
     }
@@ -179,7 +179,7 @@ EXPORT int sceneOverlap10(long refScene, long refBuffer, long refGeo, APIVec3 po
 }
 
 
-EXPORT int sceneOverlap1(long refScene, long refBuffer, long refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap1(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
 {
     lock_step()
     
@@ -190,7 +190,7 @@ EXPORT int sceneOverlap1(long refScene, long refBuffer, long refGeo, APIVec3 pos
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<long>(touch.actor->userData);
+        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
         
         callback(i, ref);
     }
@@ -200,7 +200,7 @@ EXPORT int sceneOverlap1(long refScene, long refBuffer, long refGeo, APIVec3 pos
 }
 
 
-EXPORT long createSphereGeometry(float radius)
+EXPORT uint64_t createSphereGeometry(float radius)
 {
 	const SharedPxGeometry geo = std::make_shared<PxSphereGeometry>(radius);
 	insertMapNoUserData(SharedPxGeometry, geo)
@@ -208,7 +208,7 @@ EXPORT long createSphereGeometry(float radius)
 }
 
 template<PxConvexMeshCookingType::Enum convexMeshCookingType, bool directInsertion, PxU32 gaussMapLimit>
-long createConvexMesh(PxU32 numVerts, const PxVec3* verts)
+uint64_t createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 {
 	PxCookingParams params = gCooking->getParams();
 
@@ -366,7 +366,7 @@ long loadTriangleMesh(const char* name)
 	return insertRef;
 }
 
-EXPORT long createConvexMesh(APIVec3* vertices, int pointsCount)
+EXPORT uint64_t createConvexMesh(APIVec3* vertices, int pointsCount)
 {
 	lock_step()
 
@@ -374,7 +374,7 @@ EXPORT long createConvexMesh(APIVec3* vertices, int pointsCount)
 	return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
 
 }
-EXPORT void cleanupTriangleMesh(long ref)
+EXPORT void cleanupTriangleMesh(uint64_t ref)
 {
 	lock_step()
 	
@@ -383,7 +383,7 @@ EXPORT void cleanupTriangleMesh(long ref)
 	refPxTriangleMeshs.erase(ref);
 }
 
-EXPORT void cleanupConvexMesh(long ref)
+EXPORT void cleanupConvexMesh(uint64_t ref)
 {
 	lock_step()
 	
@@ -392,7 +392,7 @@ EXPORT void cleanupConvexMesh(long ref)
 	refPxConvexMeshs.erase(ref);
 }
 
-EXPORT long createBoxGeometry(APIVec3 half)
+EXPORT uint64_t createBoxGeometry(APIVec3 half)
 {
 	lock_step()
 
@@ -402,13 +402,13 @@ EXPORT long createBoxGeometry(APIVec3 half)
 
 	return insertRef;
 }
-EXPORT void cleanupGeometry(long ref)
+EXPORT void cleanupGeometry(uint64_t ref)
 {
 	lock_step()
 	refSharedPxGeometrys.erase(ref);
 }
 
-void setupGeometryType(int type, int refGeoCount, long refGeo[], PxRigidActor* rigid)
+void setupGeometryType(int type, int refGeoCount, uint64_t refGeo[], PxRigidActor* rigid)
 {
     for (int i = 0; i < refGeoCount; i++)
     {
@@ -436,7 +436,7 @@ void setupGeometryType(int type, int refGeoCount, long refGeo[], PxRigidActor* r
 
 /// RIGID STATIC
 // create
-EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 pos, APIQuat quat, bool isTrigger)
+EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScene, APIVec3 pos, APIQuat quat, bool isTrigger)
 {
 	lock_step()
 
@@ -447,7 +447,7 @@ EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 p
 	refPxRigidStatics.insert({insertRef, rigid});
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
-    long refGeoArr[] = { refGeo };
+    uint64_t refGeoArr[] = { refGeo };
 	setupGeometryType(geoType, 1, refGeoArr, rigid);
 	
     if(isTrigger)
@@ -468,7 +468,7 @@ EXPORT long createRigidStatic(int geoType, long refGeo, long refScene, APIVec3 p
 	
 	return insertRef;
 }
-EXPORT void destroyRigidStatic(long ref)
+EXPORT void destroyRigidStatic(uint64_t ref)
 {
 	lock_step()
 	
@@ -482,13 +482,13 @@ EXPORT void destroyRigidStatic(long ref)
 
 
 // get
-EXPORT APIVec3 getRigidStaticPosition(long ref)
+EXPORT APIVec3 getRigidStaticPosition(uint64_t ref)
 {
 	lock_step()
 	
  	return ToVec3(refPxRigidStatics[ref]->getGlobalPose().p);
 }
-EXPORT APIQuat getRigidStaticRotation(long ref)
+EXPORT APIQuat getRigidStaticRotation(uint64_t ref)
 {
 	lock_step()
 	
@@ -497,13 +497,13 @@ EXPORT APIQuat getRigidStaticRotation(long ref)
 
 
 // set
-EXPORT void setRigidStaticPosition(long ref, APIVec3 p)
+EXPORT void setRigidStaticPosition(uint64_t ref, APIVec3 p)
 {
 	lock_step()
 	
 	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToPxVec3(p)));
 }
-EXPORT void setRigidStaticRotation(long ref, APIQuat q)
+EXPORT void setRigidStaticRotation(uint64_t ref, APIQuat q)
 {
 	lock_step()
 	
@@ -512,7 +512,7 @@ EXPORT void setRigidStaticRotation(long ref, APIQuat q)
 
 /// RIGID DYNAMIC
 // set
-EXPORT void setRigidDynamicTransform(long ref, APITransform t)
+EXPORT void setRigidDynamicTransform(uint64_t ref, APITransform t)
 {
 	lock_step()
 
@@ -520,7 +520,7 @@ EXPORT void setRigidDynamicTransform(long ref, APITransform t)
 }
 
 
-EXPORT void setRigidDynamicKinematicTarget(long ref, APITransform t)
+EXPORT void setRigidDynamicKinematicTarget(uint64_t ref, APITransform t)
 {
 	lock_step()
 	
@@ -528,48 +528,48 @@ EXPORT void setRigidDynamicKinematicTarget(long ref, APITransform t)
 }
 
 
-EXPORT void setRigidDynamicLinearVelocity(long ref, APIVec3 v)
+EXPORT void setRigidDynamicLinearVelocity(uint64_t ref, APIVec3 v)
 {
 	lock_step()
 	
 	refPxRigidDynamics[ref]->setLinearVelocity(ToPxVec3(v), true);
 }
 
-EXPORT APIVec3 getRigidDynamicLinearVelocity(long ref)
+EXPORT APIVec3 getRigidDynamicLinearVelocity(uint64_t ref)
 {
 	lock_step()
 
 	return ToVec3(refPxRigidDynamics[ref]->getLinearVelocity());
 }
 
-EXPORT void setRigidDynamicLinearDamping(long ref, float v)
+EXPORT void setRigidDynamicLinearDamping(uint64_t ref, float v)
 {
 	lock_step()
 
 	refPxRigidDynamics[ref]->setLinearDamping(v);
 }
 
-EXPORT void setRigidDynamicAngularDamping(long ref, float v)
+EXPORT void setRigidDynamicAngularDamping(uint64_t ref, float v)
 {
 	lock_step()
 
 	refPxRigidDynamics[ref]->setAngularDamping(v);
 }
 
-EXPORT void addRigidDynamicForce(long ref, APIVec3 v, PxForceMode::Enum forceMode)
+EXPORT void addRigidDynamicForce(uint64_t ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
 	lock_step()
 
 	refPxRigidDynamics[ref]->addForce(ToPxVec3(v), forceMode);
 }
 
-EXPORT void addRigidDynamicTorque(long ref, APIVec3 v, PxForceMode::Enum forceMode)
+EXPORT void addRigidDynamicTorque(uint64_t ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
 	lock_step()
 
 	refPxRigidDynamics[ref]->addTorque(ToPxVec3(v), forceMode);
 }
-EXPORT void setRigidDynamicAngularVelocity(long ref, APIVec3 v)
+EXPORT void setRigidDynamicAngularVelocity(uint64_t ref, APIVec3 v)
 {
 	lock_step()
 	
@@ -577,19 +577,19 @@ EXPORT void setRigidDynamicAngularVelocity(long ref, APIVec3 v)
 }
 
 
-EXPORT void setRigidDynamicMaxLinearVelocity(long ref, float v)
+EXPORT void setRigidDynamicMaxLinearVelocity(uint64_t ref, float v)
 {
 	lock_step()
 	
 	//refPxRigidDynamics[ref]->setMaxLinearVelocity(v);
 }
-EXPORT void setRigidDynamicMaxAngularVelocity(long ref, float v)
+EXPORT void setRigidDynamicMaxAngularVelocity(uint64_t ref, float v)
 {
 	lock_step()
 	
 	refPxRigidDynamics[ref]->setMaxAngularVelocity(v);
 }
-EXPORT void setRigidDynamicWord(long ref, uint32_t word)
+EXPORT void setRigidDynamicWord(uint64_t ref, uint32_t word)
 {
     lock_step()
     
@@ -602,7 +602,7 @@ EXPORT void setRigidDynamicWord(long ref, uint32_t word)
     shape->setSimulationFilterData(filterData);
     
 }
-EXPORT void setRigidDynamicDisable(long ref, bool disabled)
+EXPORT void setRigidDynamicDisable(uint64_t ref, bool disabled)
 {
     lock_step()
     const auto flags = refPxRigidDynamics[ref]->getActorFlags();
@@ -611,26 +611,26 @@ EXPORT void setRigidDynamicDisable(long ref, bool disabled)
 }
 
 // get
-EXPORT APITransform getRigidDynamicTransform(long ref)
+EXPORT APITransform getRigidDynamicTransform(uint64_t ref)
 {
 	lock_step()
     return ToTrans(refPxRigidDynamics[ref]->getGlobalPose());
 }
 
 
-EXPORT APIVec3 getRigidDynamicAngularVelocity(long ref)
+EXPORT APIVec3 getRigidDynamicAngularVelocity(uint64_t ref)
 {
 	lock_step()
 
 	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
 }
 
-EXPORT float getRigidDynamicMaxAngularVelocity(long ref)
+EXPORT float getRigidDynamicMaxAngularVelocity(uint64_t ref)
 {
 	lock_step()
 	return refPxRigidDynamics[ref]->getMaxAngularVelocity();
 }
-EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
+EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t ref)
 {
 	lock_step()
 
@@ -640,7 +640,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(long ref)
 
 
 // create
-EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
+EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo[], uint64_t refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -682,11 +682,12 @@ EXPORT long createRigidDynamic(int geoType, int refGeoCount, long refGeo[], long
 	delete shapesBuffer;
 
 	refPxScenes[refScene]->addActor(*rigid);
+
 	return insertRef;
 }
 
 
-EXPORT void destroyRigidDynamic(long ref)
+EXPORT void destroyRigidDynamic(uint64_t ref)
 {
 	lock_step()
 	
@@ -699,7 +700,7 @@ EXPORT void destroyRigidDynamic(long ref)
 }
 
 /// CAPSULE CHARACTER
-EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
+EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
 {
 	lock_step()
 	const auto insertRef = refOverlap++;
@@ -722,32 +723,32 @@ EXPORT long createCapsuleCharacter(long refScene, APIVec3 pos, APIVec3 up, float
 
 	return insertRef;
 }
-EXPORT void destroyController(long ref)
+EXPORT void destroyController(uint64_t ref)
 {
 	lock_step()
 	releaseMap(PxController, ref)
 }
 
 // get
-EXPORT APIDoubleVec3 getControllerPosition(long ref)
+EXPORT APIDoubleVec3 getControllerPosition(uint64_t ref)
 {
 	lock_step()
 	return ToVec3d(refPxControllers[ref]->getPosition());
 }
-EXPORT APIDoubleVec3 getControllerFootPosition(long ref)
+EXPORT APIDoubleVec3 getControllerFootPosition(uint64_t ref)
 {
 	lock_step()
 	return ToVec3d(refPxControllers[ref]->getFootPosition());
 }
 
 // set
-EXPORT void setControllerPosition(long ref, APIDoubleVec3 p)
+EXPORT void setControllerPosition(uint64_t ref, APIDoubleVec3 p)
 {
 	lock_step()
 	refPxControllers[ref]->setPosition(ToPxVec3d(p));
 }
 
-EXPORT void setControllerFootPosition(long ref, APIDoubleVec3 p)
+EXPORT void setControllerFootPosition(uint64_t ref, APIDoubleVec3 p)
 {
 	lock_step()
 	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
@@ -797,7 +798,7 @@ static PxFilterFlags filterShader(
 
 
 /// SCENE
-EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc)
+EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc)
 {
 	const auto insertRef = refCountPxScene++;
 	
@@ -829,7 +830,7 @@ EXPORT long createScene(APIVec3 gravity, ContactReportCallbackFunc func, Trigger
 	return insertRef;
 }
 
-EXPORT void stepPhysics(long ref, float dt)
+EXPORT void stepPhysics(uint64_t ref, float dt)
 {
 	lock_step()
 
@@ -838,11 +839,11 @@ EXPORT void stepPhysics(long ref, float dt)
     
 }
 
-EXPORT void cleanupScene(long ref)
+EXPORT void cleanupScene(uint64_t ref)
 {
 	releaseMap(PxScene, ref)
 }
-EXPORT long getSceneTimestamp(long ref)
+EXPORT uint64_t getSceneTimestamp(uint64_t ref)
 {
 	return refPxScenes[ref]->getTimestamp();
 }
