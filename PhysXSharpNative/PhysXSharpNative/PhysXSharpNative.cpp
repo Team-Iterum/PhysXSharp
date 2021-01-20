@@ -138,14 +138,15 @@ EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 or
 }
 
 
-EXPORT int sceneOverlap1000(uint64_t refScene, uint64_t refBuffer, int bufferCount, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap1000(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
 {
-    lock_step()
-    
+	lock_step()
+
     auto buffer = *refptrOverlapBuffer1000s[refBuffer];
-    
+
     refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
-    
+   
+
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
@@ -355,7 +356,7 @@ void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, ui
     createBV34TriangleMesh(name, pointsCount, vertices, triCount, indices, false, false, 4);
 }
 
-long loadTriangleMesh(const char* name)
+uint64_t loadTriangleMesh(const char* name)
 {
 	PxDefaultFileInputData stream(name);
 	auto triMesh = gPhysics->createTriangleMesh(stream);
