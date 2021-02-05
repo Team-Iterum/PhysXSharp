@@ -232,7 +232,7 @@ public:
 
 void createBV33TriangleMesh(const char* name, physx::PxU32 numVertices, const physx::PxVec3* vertices, physx::PxU32 numTriangles, const physx::PxU32* indices);
 
-void createTriangleMesh(const char* name, physx::PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount);
+EXPORT void createTriangleMesh(const char* name, physx::PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount);
 
 EXPORT void initLog(DebugLogFunc func, DebugLogErrorFunc func2);
 
