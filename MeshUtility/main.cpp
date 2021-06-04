@@ -20,7 +20,7 @@ int main (int argc, const char* argv[])
     initLog(logDebug, logError);
     initPhysics(false, numThreads, toleranceLength, toleranceSpeed, logCritical);
     
-    string basePath = "";
+    string basePath = "../../Shared/ThingTypes";
     if(argc > 1) 
     {
         basePath = string(argv[1]);

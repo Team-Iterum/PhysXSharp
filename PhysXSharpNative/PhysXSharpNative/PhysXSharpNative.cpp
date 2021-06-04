@@ -48,12 +48,23 @@ std::mutex step_mutex;
 #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
 
 
-EXPORT void charactersUpdate(float elapsed, float minDist)
+EXPORT void characterUpdate(uint64_t ref, float elapsed, float minDist)
 {
-    lock_step()
-	for (auto pair : refPxControllers)
+	lock_step()
+	refPxControllers[ref]->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
+}
+
+
+EXPORT void charactersUpdate(uint64_t refScene, float elapsed, float minDist)
+{
+	lock_step()
+	auto controllers = refPxControllerManagers[refScene];
+	for (size_t i = 0; i < controllers->getNbControllers(); i++)
 	{
-		pair.second->move(refControllersDir[pair.first], minDist, elapsed, PxControllerFilters());
+		auto controller = controllers->getController(i);
+		const auto ref = reinterpret_cast<uint64_t>(controller->getUserData());
+
+		controller->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
 	}
 }
 
@@ -857,7 +868,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.6.1 buffers");
+ 	debugLog("init physics native library v1.6.2 buffers");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
