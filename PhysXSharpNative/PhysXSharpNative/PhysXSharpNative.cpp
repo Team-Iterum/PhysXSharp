@@ -25,6 +25,7 @@ map<uint64_t, std::shared_ptr<ContactReport>> refContactReports;
 
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
+refMap(PxMaterial)
 
 refMapNonPtr(RaycastBuffer)
 refMapNonPtr(ptrOverlapBuffer1000)
@@ -41,8 +42,6 @@ PxPvd* gPvd = nullptr;
 PxDefaultCpuDispatcher*	gDispatcher = nullptr;
 
 std::shared_ptr<ErrorCallback> gErrorCallback;
-
-PxMaterial* gMaterial	= nullptr;
 
 std::mutex step_mutex;
 #define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
@@ -420,27 +419,27 @@ EXPORT void cleanupGeometry(uint64_t ref)
 	refSharedPxGeometrys.erase(ref);
 }
 
-void setupGeometryType(int type, int refGeoCount, uint64_t refGeo[], PxRigidActor* rigid)
+void setupGeometryType(int type, int refGeoCount, uint64_t refGeo[], PxRigidActor* rigid, PxMaterial& mat)
 {
     for (int i = 0; i < refGeoCount; i++)
     {
         if(type == 1)
         {
-            PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo[i]], *gMaterial);
+            PxRigidActorExt::createExclusiveShape(*rigid, *refSharedPxGeometrys[refGeo[i]], mat);
         }
         else if(type == 2)
         {
             PxConvexMeshGeometry geo;
             geo.convexMesh = refPxConvexMeshs[refGeo[i]];
             
-            PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
+            PxRigidActorExt::createExclusiveShape(*rigid, geo, mat);
         }
         else if(type == 3)
         {
             PxTriangleMeshGeometry geo;
             geo.triangleMesh = refPxTriangleMeshs[refGeo[i]];
             
-            PxRigidActorExt::createExclusiveShape(*rigid, geo, *gMaterial);
+            PxRigidActorExt::createExclusiveShape(*rigid, geo, mat);
             
         }
     }
@@ -448,7 +447,7 @@ void setupGeometryType(int type, int refGeoCount, uint64_t refGeo[], PxRigidActo
 
 /// RIGID STATIC
 // create
-EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScene, APIVec3 pos, APIQuat quat, bool isTrigger)
+EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScene, uint64_t refMat, APIVec3 pos, APIQuat quat, bool isTrigger)
 {
 	lock_step()
 
@@ -460,7 +459,7 @@ EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScen
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
     uint64_t refGeoArr[] = { refGeo };
-	setupGeometryType(geoType, 1, refGeoArr, rigid);
+	setupGeometryType(geoType, 1, refGeoArr, rigid, *refPxMaterials[refMat]);
 	
     if(isTrigger)
     {
@@ -652,7 +651,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t ref)
 
 
 // create
-EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo[], uint64_t refScene, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
+EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo[], uint64_t refScene, uint64_t refMat, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
 	lock_step()
 	
@@ -672,7 +671,7 @@ EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo
     
 	rigid->setMass(mass);
 
-	setupGeometryType(geoType, refGeoCount, refGeo, rigid);
+	setupGeometryType(geoType, refGeoCount, refGeo, rigid, *refPxMaterials[refMat]);
 	
     
 	PxShape** shapesBuffer = new PxShape * [refGeoCount];
@@ -712,7 +711,7 @@ EXPORT void destroyRigidDynamic(uint64_t ref)
 }
 
 /// CAPSULE CHARACTER
-EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
+EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, uint64_t refMat, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
 {
 	lock_step()
 	const auto insertRef = refOverlap++;
@@ -723,7 +722,7 @@ EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, APIVec3 pos, APIVec3 u
 	desc.position = ToPxVec3d(pos);
 	desc.upDirection = ToPxVec3(up);
 	desc.stepOffset = stepOffset;
-	desc.material = gMaterial;
+	desc.material = refPxMaterials[refMat];
 	
 	const auto c = refPxControllerManagers[refScene]->createController(desc);
 	c->setUserData(reinterpret_cast<void*>(insertRef));
@@ -851,6 +850,7 @@ EXPORT void stepPhysics(uint64_t ref, float dt)
     
 }
 
+
 EXPORT void cleanupScene(uint64_t ref)
 {
 	releaseMap(PxScene, ref)
@@ -868,7 +868,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.6.2 buffers");
+ 	debugLog("init physics native library v1.7.1 materials");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
@@ -892,10 +892,25 @@ void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float 
 	gDispatcher = PxDefaultCpuDispatcherCreate(numThreads);
 	
 }
-EXPORT void initGlobalMaterial(float staticFriction, float dynamicFriction, float restitution)
+
+EXPORT uint64_t createMaterial(float staticFriction, float dynamicFriction, float restitution)
 {
-	gMaterial = gPhysics->createMaterial(staticFriction, dynamicFriction, restitution);
+	const auto insertRef = refCountPxMaterial++;
+	const auto mat = gPhysics->createMaterial(staticFriction, dynamicFriction, restitution);
+	refPxMaterials.insert({ insertRef, mat });
+	return insertRef;
 }
+
+EXPORT void cleanupMaterial(uint64_t ref)
+{
+	lock_step()
+
+	refPxMaterials[ref]->release();
+	refPxMaterials[ref] = nullptr;
+	refPxMaterials.erase(ref);
+}
+
+
 
 EXPORT void cleanupPhysics()
 {

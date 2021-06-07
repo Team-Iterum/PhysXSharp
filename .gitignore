@@ -411,4 +411,5 @@ PhysXSharpNative/PhysXSharpNative.xcodeproj
 PhysXSharpNative/CMakeSettings.json
 
 PhysXSharpNative/build
+PhysXSharpNative/build2
 MeshUtility/build
