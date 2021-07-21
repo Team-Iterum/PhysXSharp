@@ -809,13 +809,16 @@ static PxFilterFlags filterShader(
 
 
 /// SCENE
-EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc)
+EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc, bool enableCCD, bool enableEnhancedDetermenism)
 {
 	const auto insertRef = refCountPxScene++;
 	
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = ToPxVec3(gravity);
-	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
+	if (enableEnhancedDetermenism)
+		sceneDesc.flags |= PxSceneFlag::eENABLE_ENHANCED_DETERMINISM;
+	if (enableCCD)
+		sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
 
 	sceneDesc.cpuDispatcher	= gDispatcher;
 	sceneDesc.filterShader = filterShader;
@@ -868,7 +871,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.7.1 materials");
+ 	debugLog("init physics native library v1.7.2 materials + scene");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
