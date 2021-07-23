@@ -59,7 +59,7 @@ typedef void (*RaycastCallback)(int index, uint64_t t1);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
 typedef void (*DebugLogErrorFunc)(const char* message);
-typedef void (*ContactReportCallbackFunc)(const uint64_t ref0, const uint64_t ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation);
+typedef void (*ContactReportCallbackFunc)(int index, int count, const uint64_t ref0, const uint64_t ref1, APIVec3 normal, APIVec3 position, APIVec3 impulse, float separation, int faceIndex0, int faceIndex1);
 typedef void (*TriggerReportCallbackFunc)(const uint64_t ref0, const uint64_t ref1);
 
 #define ToPxVec3(v) physx::PxVec3(v.x, v.y, v.z)
@@ -196,27 +196,44 @@ public:
                 {
                     isTrigger = true;
                 }
-                
-
-                for (int j = 0; j < nbContacts; j++)
+                /*for (int j = 0; j < nbContacts; j++)
                 {
-                    if(separation > contacts[j].separation)
+                    if (std::abs(separation) > std::abs(contacts[j].separation))
                     {
                         normal = ToVec3(contacts[j].normal);
                         position = ToVec3(contacts[j].position);
                         impulse = ToVec3(contacts[j].impulse);
                         separation = contacts[j].separation;
                     }
+
+                    normal = ToVec3(contacts[j].normal);
+                    position = ToVec3(contacts[j].position);
+                    impulse = ToVec3(contacts[j].impulse);
+                    separation = contacts[j].separation;
+
+                }*/
+
+                if (!isTrigger) 
+                {
+                    for (int j = 0; j < nbContacts; j++)
+                    {
+                        normal = ToVec3(contacts[j].normal);
+                        position = ToVec3(contacts[j].position);
+                        impulse = ToVec3(contacts[j].impulse);
+                        separation = contacts[j].separation;
+                        callback(j, nbContacts, ref0, ref1, normal, position, impulse, separation, contacts[j].internalFaceIndex0, contacts[j].internalFaceIndex1);
+                    }
                 }
+
             }
 
             if(isTrigger)
             {
                 triggerCallback(ref0, ref1);
             }
-            else
+            else 
             {
-                callback(ref0, ref1, normal, position, impulse, separation);
+                //callback(0, 0, ref0, ref1, normal, position, impulse, separation, 0, 0);
             }
         }
     }
