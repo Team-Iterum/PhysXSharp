@@ -851,8 +851,68 @@ EXPORT void stepPhysics(uint64_t ref, float dt)
     refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
     
+
 }
 
+PxGeometry getGeometryByType(uint64_t refGeo, int geoType)
+{
+	
+	if (geoType == 1) {
+		return *refSharedPxGeometrys[refGeo].get();
+	}
+	
+	if (geoType == 2) {
+		PxConvexMeshGeometry geo;
+		geo.convexMesh = refPxConvexMeshs[refGeo];
+		
+		return geo;
+	}
+	
+	if (geoType == 3) {
+		PxTriangleMeshGeometry geo;
+		geo.triangleMesh = refPxTriangleMeshs[refGeo];
+		return geo;
+	}
+
+}
+
+EXPORT APIVec4 computePenetration(uint64_t refGeo1, int geoType1, uint16_t refGeo2, int geoType2, APITransform t1, APITransform t2)
+{
+
+	
+	PxConvexMeshGeometry geom1;
+	geom1.convexMesh = refPxConvexMeshs[refGeo1];
+	PxVec3 direction;
+	PxF32 depth;
+
+
+	if (geoType2 == 3) // triangle
+	{
+		PxTriangleMeshGeometry geom2;
+		geom2.triangleMesh = refPxTriangleMeshs[refGeo2];
+
+		auto tr1 = ToPxTrans(t1);
+		auto tr2 = ToPxTrans(t2);
+
+		bool isPenetrating = PxComputeTriangleMeshPenetration(direction, depth,
+			geom1, tr1,
+			geom2, tr2, 4);
+
+
+	}
+	else // other
+	{
+		PxGeometry geom2 = getGeometryByType(refGeo1, geoType1);
+		
+		bool isPenetrating = PxGeometryQuery::computePenetration(direction, depth,
+			geom1, ToPxTrans(t1),
+			geom2, ToPxTrans(t2));
+	}
+
+
+
+	return { direction.x , direction.y , direction.z , depth };
+}
 
 EXPORT void cleanupScene(uint64_t ref)
 {
@@ -871,7 +931,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.7.4 all contacts+");
+ 	debugLog("init physics native library v1.8.0 compute penetration");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	

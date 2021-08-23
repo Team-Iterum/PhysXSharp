@@ -33,6 +33,15 @@ struct APIVec3
     float z;
 };
 
+struct APIVec4
+{
+    float x;
+    float y;
+    float z;
+    float w;
+};
+
+
 struct APIDoubleVec3
 {
     double x;
