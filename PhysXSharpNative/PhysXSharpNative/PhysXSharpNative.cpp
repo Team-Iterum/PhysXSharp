@@ -878,8 +878,9 @@ PxGeometry getGeometryByType(uint64_t refGeo, int geoType)
 
 EXPORT APIVec4 computePenetration(uint64_t refGeo1, int geoType1, uint16_t refGeo2, int geoType2, APITransform t1, APITransform t2)
 {
-
 	
+	if (geoType1 != 2) return;
+
 	PxConvexMeshGeometry geom1;
 	geom1.convexMesh = refPxConvexMeshs[refGeo1];
 	PxVec3 direction;
@@ -900,9 +901,13 @@ EXPORT APIVec4 computePenetration(uint64_t refGeo1, int geoType1, uint16_t refGe
 
 
 	}
-	else // other
+	else if(geoType2 == 2) // convex
 	{
-		PxGeometry geom2 = getGeometryByType(refGeo1, geoType1);
+		PxConvexMeshGeometry geom2;
+		geom2.convexMesh = refPxConvexMeshs[refGeo2];
+
+		auto tr1 = ToPxTrans(t1);
+		auto tr2 = ToPxTrans(t2);
 		
 		bool isPenetrating = PxGeometryQuery::computePenetration(direction, depth,
 			geom1, ToPxTrans(t1),
@@ -931,7 +936,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.0 compute penetration");
+ 	debugLog("init physics native library v1.8.1 compute penetration");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
