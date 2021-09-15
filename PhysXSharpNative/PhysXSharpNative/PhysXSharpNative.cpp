@@ -26,11 +26,11 @@ map<uint64_t, std::shared_ptr<ContactReport>> refContactReports;
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
 refMap(PxMaterial)
+refMap(PxHeightField)
 
+refMapNonPtr(OverlapBuffer)
 refMapNonPtr(RaycastBuffer)
-refMapNonPtr(ptrOverlapBuffer1000)
-refMapNonPtr(ptrOverlapBuffer10)
-refMapNonPtr(ptrOverlapBuffer1)
+
 refMapNonPtr(SharedPxGeometry);
 
 // Global
@@ -43,20 +43,20 @@ PxDefaultCpuDispatcher*	gDispatcher = nullptr;
 
 std::shared_ptr<ErrorCallback> gErrorCallback;
 
-std::mutex step_mutex;
-#define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
-
+// locksteps
+//std::mutex step_mutex;
+//#define lock_step() const std::lock_guard<std::mutex> lockStep(step_mutex);
 
 EXPORT void characterUpdate(uint64_t ref, float elapsed, float minDist)
 {
-	lock_step()
+	//lock_step()
 	refPxControllers[ref]->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
 }
 
 
 EXPORT void charactersUpdate(uint64_t refScene, float elapsed, float minDist)
 {
-	lock_step()
+	//lock_step()
 	auto controllers = refPxControllerManagers[refScene];
 	for (size_t i = 0; i < controllers->getNbControllers(); i++)
 	{
@@ -74,66 +74,66 @@ EXPORT void setControllerDirection(uint64_t ref, APIVec3 dir)
 }
 
 
-EXPORT uint64_t createRaycastBuffer10()
-{
-    lock_step()
-    const auto insertRef = refCountRaycastBuffer++;
 
-    RaycastBuffer buffer = std::make_shared<RaycastBuffer10>();
-    
-    refRaycastBuffers.insert({insertRef, buffer});
-    
-    return insertRef;
+////
+////// OVERLAPS
+EXPORT uint64_t createOverlapBuffer(uint32_t max)
+{
+
+	uint64_t insertRef = 0;
+
+	if (max <= 100) {
+		insertRef = refCountOverlapBuffer++;
+		OverlapBuffer buffer = std::make_shared<OverlapBufferN<100>>(max);
+		refOverlapBuffers.insert({ insertRef, buffer });
+	}
+	else if (max <= 1000) {
+		insertRef = refCountOverlapBuffer++;
+		OverlapBuffer buffer = std::make_shared<OverlapBufferN<1000>>(max);
+		refOverlapBuffers.insert({ insertRef, buffer });
+	}
+	else if (max <= 5000) {
+		insertRef = refCountOverlapBuffer++;
+		OverlapBuffer buffer = std::make_shared<OverlapBufferN<5000>>(max);
+		refOverlapBuffers.insert({ insertRef, buffer });
+	}
+	else if (max <= 15000) {
+		insertRef = refCountOverlapBuffer++;
+		OverlapBuffer buffer = std::make_shared<OverlapBufferN<15000>>(max);
+		refOverlapBuffers.insert({ insertRef, buffer });
+	}
+	
+	
+	return insertRef;
 }
 
-
-
-EXPORT uint64_t createOverlapBuffer1000()
+///
+/// RAYCASTS
+EXPORT uint64_t createRaycastBuffer(uint32_t max)
 {
-    lock_step()
-    const auto insertRef = refCountptrOverlapBuffer1000++;
+	uint64_t insertRef = 0;
 
-    ptrOverlapBuffer1000 buffer = std::make_shared<OverlapBuffer1000>();
-    
-    refptrOverlapBuffer1000s.insert({insertRef, buffer});
-    
-    return insertRef;
+	if (max <= 10) {
+		insertRef = refCountRaycastBuffer++;
+		RaycastBuffer buffer = std::make_shared<RaycastBufferN<10>>(max);
+		refRaycastBuffers.insert({ insertRef, buffer });
+	}
+	else if (max <= 100) {
+		insertRef = refCountRaycastBuffer++;
+		RaycastBuffer buffer = std::make_shared<RaycastBufferN<100>>(max);
+		refRaycastBuffers.insert({ insertRef, buffer });
+	}
 
-}
-
-EXPORT uint64_t createOverlapBuffer1()
-{
-    lock_step()
-    const auto insertRef = refCountptrOverlapBuffer1++;
-
-    ptrOverlapBuffer1 buffer = std::make_shared<OverlapBuffer1>();
-    
-    refptrOverlapBuffer1s.insert({insertRef, buffer});
-    
-    return insertRef;
-
-}
-
-
-EXPORT uint64_t createOverlapBuffer10()
-{
-    lock_step()
-    const auto insertRef = refCountptrOverlapBuffer10++;
-
-    ptrOverlapBuffer10 buffer = std::make_shared<OverlapBuffer10>();
-    
-    refptrOverlapBuffer10s.insert({insertRef, buffer});
-    
-    return insertRef;
-
+	return insertRef;
 }
 
 
 EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 origin, APIVec3 unitDir, float distance, RaycastCallback callback)
 {
-    lock_step()
+    // lock_step()
     
     auto buffer = *refRaycastBuffers[refRaycastBuffer];
+
     refPxScenes[refScene]->raycast(ToVec3(origin), ToVec3(unitDir), distance, buffer);
     
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
@@ -148,56 +148,15 @@ EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 or
 }
 
 
-EXPORT int sceneOverlap1000(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
+EXPORT int sceneOverlap(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
 {
-	lock_step()
+	// lock_step()
 
-    auto buffer = *refptrOverlapBuffer1000s[refBuffer];
+    auto buffer = *refOverlapBuffers[refBuffer];
 
     refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
    
 
-    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
-    {
-        const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
-        
-        callback(i, ref);
-    }
-
-    return buffer.nbTouches;
-    
-}
-
-EXPORT int sceneOverlap10(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
-{
-    lock_step()
-    
-    auto buffer = *refptrOverlapBuffer10s[refBuffer];
-    
-    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
-    
-    for (PxU32 i = 0; i < buffer.nbTouches; ++i)
-    {
-        const auto touch = buffer.touches[i];
-        const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
-        
-        callback(i, ref);
-    }
-
-    return buffer.nbTouches;
-    
-}
-
-
-EXPORT int sceneOverlap1(uint64_t refScene, uint64_t refBuffer, uint64_t refGeo, APIVec3 pos, OverlapCallback callback)
-{
-    lock_step()
-    
-    auto buffer = *refptrOverlapBuffer1s[refBuffer];
-    
-    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
-    
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
     {
         const auto touch = buffer.touches[i];
@@ -379,7 +338,7 @@ uint64_t loadTriangleMesh(const char* name)
 
 EXPORT uint64_t createConvexMesh(APIVec3* vertices, int pointsCount)
 {
-	lock_step()
+	//lock_step()
 
 	const auto verticesPx = reinterpret_cast<PxVec3*>(vertices);
 	return createConvexMesh<PxConvexMeshCookingType::eQUICKHULL, true, 256>(pointsCount, verticesPx);
@@ -387,7 +346,7 @@ EXPORT uint64_t createConvexMesh(APIVec3* vertices, int pointsCount)
 }
 EXPORT void cleanupTriangleMesh(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxTriangleMeshs[ref]->release();
 	refPxTriangleMeshs[ref] = nullptr;
@@ -396,7 +355,7 @@ EXPORT void cleanupTriangleMesh(uint64_t ref)
 
 EXPORT void cleanupConvexMesh(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxConvexMeshs[ref]->release();
 	refPxConvexMeshs[ref] = nullptr;
@@ -405,7 +364,7 @@ EXPORT void cleanupConvexMesh(uint64_t ref)
 
 EXPORT uint64_t createBoxGeometry(APIVec3 half)
 {
-	lock_step()
+	//lock_step()
 
 	const auto geo = std::make_shared<PxBoxGeometry>(ToPxVec3(half));
 	const auto insertRef = refCountSharedPxGeometry++;
@@ -415,7 +374,7 @@ EXPORT uint64_t createBoxGeometry(APIVec3 half)
 }
 EXPORT void cleanupGeometry(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	refSharedPxGeometrys.erase(ref);
 }
 
@@ -449,7 +408,7 @@ void setupGeometryType(int type, int refGeoCount, uint64_t refGeo[], PxRigidActo
 // create
 EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScene, uint64_t refMat, APIVec3 pos, APIQuat quat, bool isTrigger)
 {
-	lock_step()
+	//lock_step()
 
 	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), ToQuat(quat)));
 	
@@ -481,7 +440,7 @@ EXPORT uint64_t createRigidStatic(int geoType, uint64_t refGeo, uint64_t refScen
 }
 EXPORT void destroyRigidStatic(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
 	const auto actor = refPxRigidStatics[ref];
 	actor->getScene()->removeActor(*actor);
@@ -495,13 +454,13 @@ EXPORT void destroyRigidStatic(uint64_t ref)
 // get
 EXPORT APIVec3 getRigidStaticPosition(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
  	return ToVec3(refPxRigidStatics[ref]->getGlobalPose().p);
 }
 EXPORT APIQuat getRigidStaticRotation(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
 	return ToQuat(refPxRigidStatics[ref]->getGlobalPose().q);
 }
@@ -510,13 +469,13 @@ EXPORT APIQuat getRigidStaticRotation(uint64_t ref)
 // set
 EXPORT void setRigidStaticPosition(uint64_t ref, APIVec3 p)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToPxVec3(p)));
 }
 EXPORT void setRigidStaticRotation(uint64_t ref, APIQuat q)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToQuat(q)));	
 }
@@ -525,7 +484,7 @@ EXPORT void setRigidStaticRotation(uint64_t ref, APIQuat q)
 // set
 EXPORT void setRigidDynamicTransform(uint64_t ref, APITransform t)
 {
-	lock_step()
+	//lock_step()
 
 	refPxRigidDynamics[ref]->setGlobalPose(ToPxTrans(t));
 }
@@ -533,7 +492,7 @@ EXPORT void setRigidDynamicTransform(uint64_t ref, APITransform t)
 
 EXPORT void setRigidDynamicKinematicTarget(uint64_t ref, APITransform t)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidDynamics[ref]->setKinematicTarget(ToPxTrans(t));
 }
@@ -541,48 +500,48 @@ EXPORT void setRigidDynamicKinematicTarget(uint64_t ref, APITransform t)
 
 EXPORT void setRigidDynamicLinearVelocity(uint64_t ref, APIVec3 v)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidDynamics[ref]->setLinearVelocity(ToPxVec3(v), true);
 }
 
 EXPORT APIVec3 getRigidDynamicLinearVelocity(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 
 	return ToVec3(refPxRigidDynamics[ref]->getLinearVelocity());
 }
 
 EXPORT void setRigidDynamicLinearDamping(uint64_t ref, float v)
 {
-	lock_step()
+	//lock_step()
 
 	refPxRigidDynamics[ref]->setLinearDamping(v);
 }
 
 EXPORT void setRigidDynamicAngularDamping(uint64_t ref, float v)
 {
-	lock_step()
+	//lock_step()
 
 	refPxRigidDynamics[ref]->setAngularDamping(v);
 }
 
 EXPORT void addRigidDynamicForce(uint64_t ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
-	lock_step()
+	//lock_step()
 
 	refPxRigidDynamics[ref]->addForce(ToPxVec3(v), forceMode);
 }
 
 EXPORT void addRigidDynamicTorque(uint64_t ref, APIVec3 v, PxForceMode::Enum forceMode)
 {
-	lock_step()
+	//lock_step()
 
 	refPxRigidDynamics[ref]->addTorque(ToPxVec3(v), forceMode);
 }
 EXPORT void setRigidDynamicAngularVelocity(uint64_t ref, APIVec3 v)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidDynamics[ref]->setAngularVelocity(ToPxVec3(v), true);
 }
@@ -590,19 +549,19 @@ EXPORT void setRigidDynamicAngularVelocity(uint64_t ref, APIVec3 v)
 
 EXPORT void setRigidDynamicMaxLinearVelocity(uint64_t ref, float v)
 {
-	lock_step()
+	//lock_step()
 	
 	//refPxRigidDynamics[ref]->setMaxLinearVelocity(v);
 }
 EXPORT void setRigidDynamicMaxAngularVelocity(uint64_t ref, float v)
 {
-	lock_step()
+	//lock_step()
 	
 	refPxRigidDynamics[ref]->setMaxAngularVelocity(v);
 }
 EXPORT void setRigidDynamicWord(uint64_t ref, uint32_t word)
 {
-    lock_step()
+    //lock_step()
     
     PxShape* shape;
     refPxRigidDynamics[ref]->getShapes(&shape, 1);
@@ -615,7 +574,7 @@ EXPORT void setRigidDynamicWord(uint64_t ref, uint32_t word)
 }
 EXPORT void setRigidDynamicDisable(uint64_t ref, bool disabled)
 {
-    lock_step()
+    //lock_step()
     const auto flags = refPxRigidDynamics[ref]->getActorFlags();
     refPxRigidDynamics[ref]->setActorFlags(disabled ? flags | PxActorFlag::eDISABLE_SIMULATION :
                                                      flags & ~PxActorFlag::eDISABLE_SIMULATION);
@@ -624,26 +583,26 @@ EXPORT void setRigidDynamicDisable(uint64_t ref, bool disabled)
 // get
 EXPORT APITransform getRigidDynamicTransform(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
     return ToTrans(refPxRigidDynamics[ref]->getGlobalPose());
 }
 
 
 EXPORT APIVec3 getRigidDynamicAngularVelocity(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 
 	return ToVec3(refPxRigidDynamics[ref]->getAngularVelocity());
 }
 
 EXPORT float getRigidDynamicMaxAngularVelocity(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	return refPxRigidDynamics[ref]->getMaxAngularVelocity();
 }
 EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 
     return 0;//refPxRigidDynamics[ref]->getMaxLinearVelocity();
 }
@@ -653,7 +612,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t ref)
 // create
 EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo[], uint64_t refScene, uint64_t refMat, bool kinematic, bool ccd, bool retain, bool disableGravity, bool isTrigger, float mass, unsigned int word, APIVec3 pos, APIQuat quat)
 {
-	lock_step()
+	//lock_step()
 	
 	const auto rigid = gPhysics->createRigidDynamic(PxTransform(ToVec3(pos), ToQuat(quat)));
 
@@ -700,7 +659,7 @@ EXPORT uint64_t createRigidDynamic(int geoType, int refGeoCount, uint64_t refGeo
 
 EXPORT void destroyRigidDynamic(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	
 	const auto actor = refPxRigidDynamics[ref];
 	actor->getScene()->removeActor(*actor);
@@ -713,7 +672,7 @@ EXPORT void destroyRigidDynamic(uint64_t ref)
 /// CAPSULE CHARACTER
 EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, uint64_t refMat, APIVec3 pos, APIVec3 up, float height, float radius, float stepOffset)
 {
-	lock_step()
+	//lock_step()
 	const auto insertRef = refOverlap++;
 	
 	PxCapsuleControllerDesc desc;
@@ -736,32 +695,32 @@ EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, uint64_t refMat, APIVe
 }
 EXPORT void destroyController(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	releaseMap(PxController, ref)
 }
 
 // get
 EXPORT APIDoubleVec3 getControllerPosition(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	return ToVec3d(refPxControllers[ref]->getPosition());
 }
 EXPORT APIDoubleVec3 getControllerFootPosition(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 	return ToVec3d(refPxControllers[ref]->getFootPosition());
 }
 
 // set
 EXPORT void setControllerPosition(uint64_t ref, APIDoubleVec3 p)
 {
-	lock_step()
+	//lock_step()
 	refPxControllers[ref]->setPosition(ToPxVec3d(p));
 }
 
 EXPORT void setControllerFootPosition(uint64_t ref, APIDoubleVec3 p)
 {
-	lock_step()
+	//lock_step()
 	refPxControllers[ref]->setFootPosition(ToPxVec3d(p));
 }
 
@@ -807,6 +766,55 @@ static PxFilterFlags filterShader(
     return PxFilterFlag::eDEFAULT;
 }
 
+PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
+{
+
+	PxU32 hfNumVerts = hfSize * hfSize;
+
+	PxHeightFieldSample* samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
+	memset(samples, 0, hfNumVerts * sizeof(PxHeightFieldSample));
+
+	for (PxU32 x = 0; x < hfSize; x++)
+		for (PxU32 y = 0; y < hfSize; y++)
+		{
+			PxI32 h = PxI32(heightmap[y + x * hfSize] / hfScale);
+			PXS_ASSERT(h <= 0xffff);
+			samples[x + y * hfSize].height = (PxI16)(h);
+		}
+
+	PxHeightFieldDesc hfDesc;
+	hfDesc.format = PxHeightFieldFormat::eS16_TM;
+	hfDesc.nbColumns = hfSize;
+	hfDesc.nbRows = hfSize;
+	hfDesc.samples.data = samples;
+	hfDesc.samples.stride = sizeof(PxHeightFieldSample);
+
+	return hfDesc;
+
+}
+
+bool createHeighfield(const char* name, PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
+{
+	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize);
+
+	PxDefaultFileOutputStream outBuffer(name);
+	bool res = gCooking->cookHeightField(hfDesc, outBuffer);
+	return res;
+}
+
+EXPORT void createTerrain(PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
+{
+	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize);
+
+	PxHeightField* aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
+
+	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), hfScale, hfScale, hfScale);
+	/*PxShape* aHeightFieldShape = PxRigidActorExt::createExclusiveShape(*aHeightFieldActor,
+		hfGeom, aMaterialArray, nbMaterials);*/
+
+	if (!aHeightField)
+		debugLogError("creating the heightfield failed");
+}
 
 /// SCENE
 EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, TriggerReportCallbackFunc triggerFunc, bool enableCCD, bool enableEnhancedDetermenism)
@@ -846,7 +854,7 @@ EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Tri
 
 EXPORT void stepPhysics(uint64_t ref, float dt)
 {
-	lock_step()
+	// lock_step()
 
     refPxScenes[ref]->simulate(dt);
 	refPxScenes[ref]->fetchResults(true);
@@ -936,7 +944,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.2 compute penetration");
+ 	debugLog("init physics native library v1.8.3 no lock + update overlay/raycasts");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
@@ -971,7 +979,7 @@ EXPORT uint64_t createMaterial(float staticFriction, float dynamicFriction, floa
 
 EXPORT void cleanupMaterial(uint64_t ref)
 {
-	lock_step()
+	//lock_step()
 
 	refPxMaterials[ref]->release();
 	refPxMaterials[ref] = nullptr;

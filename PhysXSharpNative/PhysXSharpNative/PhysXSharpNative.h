@@ -114,16 +114,27 @@ DebugLogErrorFunc debugLogError;
     #define PXS_ASSERT(exp) {}
 #endif
 
+// buffers typedefs
+typedef physx::PxHitBuffer<physx::PxOverlapHit> PxHitOverlapBuffer;
+typedef physx::PxHitBuffer<physx::PxRaycastHit> PxHitRaycastBuffer;
 
-typedef physx::PxOverlapBufferN<1> OverlapBuffer1;
-typedef physx::PxOverlapBufferN<10> OverlapBuffer10;
-typedef physx::PxOverlapBufferN<1000> OverlapBuffer1000;
-typedef physx::PxRaycastBufferN<10> RaycastBuffer10;
+template <int maxN>
+struct OverlapBufferN : public PxHitOverlapBuffer
+{
+    physx::PxOverlapHit hits[maxN];
+    OverlapBufferN(physx::PxU32 max) : PxHitBuffer<physx::PxOverlapHit>(hits, max) {}
+};
 
-typedef std::shared_ptr<OverlapBuffer1> ptrOverlapBuffer1;
-typedef std::shared_ptr<OverlapBuffer10> ptrOverlapBuffer10;
-typedef std::shared_ptr<OverlapBuffer1000> ptrOverlapBuffer1000;
-typedef std::shared_ptr<RaycastBuffer10> RaycastBuffer;
+template <int maxN>
+struct RaycastBufferN : public PxHitRaycastBuffer
+{
+    physx::PxRaycastHit hits[maxN];
+    RaycastBufferN(physx::PxU32 max) : PxHitBuffer<physx::PxRaycastHit>(hits, max) {}
+};
+
+
+typedef std::shared_ptr<PxHitOverlapBuffer> OverlapBuffer;
+typedef std::shared_ptr<PxHitRaycastBuffer> RaycastBuffer;
 
 typedef std::shared_ptr<physx::PxGeometry> SharedPxGeometry;
 
@@ -257,6 +268,9 @@ public:
 
 
 void createBV33TriangleMesh(const char* name, physx::PxU32 numVertices, const physx::PxVec3* vertices, physx::PxU32 numTriangles, const physx::PxU32* indices);
+physx::PxHeightFieldDesc createHeighfieldDesc(physx::PxReal* heightmap, physx::PxReal hfScale, physx::PxU32 hfSize);
+
+EXPORT bool createHeighfield(const char* name, physx::PxReal* heightmap, physx::PxReal hfScale, physx::PxU32 hfSize);
 
 EXPORT void createTriangleMesh(const char* name, physx::PxVec3 vertices[], int pointsCount, uint32_t indices[], int triCount);
 
