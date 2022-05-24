@@ -766,26 +766,26 @@ static PxFilterFlags filterShader(
     return PxFilterFlag::eDEFAULT;
 }
 
-PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
+PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 nbCols, PxU32 nbRows)
 {
 
-	PxU32 hfNumVerts = hfSize * hfSize;
+	PxU32 hfNumVerts = nbCols * nbRows;
 
 	PxHeightFieldSample* samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
 	memset(samples, 0, hfNumVerts * sizeof(PxHeightFieldSample));
 
-	for (PxU32 x = 0; x < hfSize; x++)
-		for (PxU32 y = 0; y < hfSize; y++)
+	for (PxU32 x = 0; x < nbRows; x++)
+		for (PxU32 y = 0; y < nbCols; y++)
 		{
-			PxI32 h = PxI32(heightmap[y + x * hfSize] / hfScale);
+			PxI32 h = PxI32(heightmap[y + x * nbRows] / hfScale);
 			PXS_ASSERT(h <= 0xffff);
-			samples[x + y * hfSize].height = (PxI16)(h);
+			samples[x + y * nbRows].height = (PxI16)(h);
 		}
 
 	PxHeightFieldDesc hfDesc;
 	hfDesc.format = PxHeightFieldFormat::eS16_TM;
-	hfDesc.nbColumns = hfSize;
-	hfDesc.nbRows = hfSize;
+	hfDesc.nbColumns = nbCols;
+	hfDesc.nbRows = nbRows;
 	hfDesc.samples.data = samples;
 	hfDesc.samples.stride = sizeof(PxHeightFieldSample);
 
@@ -793,27 +793,48 @@ PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 
 
 }
 
-bool createHeighfield(const char* name, PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
-{
-	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize);
 
-	PxDefaultFileOutputStream outBuffer(name);
-	bool res = gCooking->cookHeightField(hfDesc, outBuffer);
-	return res;
-}
-
-EXPORT void createTerrain(PxReal* heightmap, PxReal hfScale, PxU32 hfSize)
+EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, PxU32 hfSize, uint64_t refScene, uint64_t refMat, APIVec3 pos)
 {
-	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize);
+
+	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize, hfSize);
 
 	PxHeightField* aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
 
 	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), hfScale, hfScale, hfScale);
-	/*PxShape* aHeightFieldShape = PxRigidActorExt::createExclusiveShape(*aHeightFieldActor,
-		hfGeom, aMaterialArray, nbMaterials);*/
+	
 
-	if (!aHeightField)
-		debugLogError("creating the heightfield failed");
+	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), PxQuat(PxIdentity)));
+
+	const auto insertRef = refOverlap++;
+	refPxRigidStatics.insert({ insertRef, rigid });
+	rigid->userData = reinterpret_cast<void*>(insertRef);
+
+	
+	PxRigidActorExt::createExclusiveShape(*rigid, hfGeom, *refPxMaterials[refMat]);
+	refPxScenes[refScene]->addActor(*rigid);
+
+	return insertRef;
+}
+
+EXPORT void modifyTerrain(uint64_t ref, PxReal* heightmap, PxU32 startCol, PxU32 startRow, PxU32 nbCols, PxU32 nbRows, PxReal hfScale, bool shrinkBounds)
+{
+	PxShape* shape;
+	refPxRigidStatics[ref]->getShapes(&shape, 1);
+	if (shape->getGeometryType() != PxGeometryType::eHEIGHTFIELD) {
+
+		debugLogError("shape geometry is not heightfield");
+		return;
+	}
+	const auto geo = shape->getGeometry().heightField();
+
+	auto subfieldDesc = createHeighfieldDesc(heightmap, hfScale, nbCols, nbRows);
+
+	subfieldDesc.thickness = geo.heightField->getThickness();
+	subfieldDesc.format = geo.heightField->getFormat();
+	subfieldDesc.flags = geo.heightField->getFlags();
+
+	geo.heightField->modifySamples(startCol, startRow, subfieldDesc, shrinkBounds);
 }
 
 /// SCENE
@@ -944,7 +965,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.3 no lock + update overlay/raycasts");
+ 	debugLog("init physics native library v1.8.4 terrain support");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
