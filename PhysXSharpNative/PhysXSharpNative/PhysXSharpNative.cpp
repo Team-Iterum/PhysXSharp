@@ -26,7 +26,9 @@ map<uint64_t, std::shared_ptr<ContactReport>> refContactReports;
 refMap(PxTriangleMesh)
 refMap(PxConvexMesh)
 refMap(PxMaterial)
-refMap(PxHeightField)
+
+uint64_t refTerrain;
+map<uint64_t, PxRigidStatic*> refTerrains;
 
 refMapNonPtr(OverlapBuffer)
 refMapNonPtr(RaycastBuffer)
@@ -450,6 +452,32 @@ EXPORT void destroyRigidStatic(uint64_t ref)
 	refPxRigidStatics.erase(ref);
 }
 
+EXPORT void destroyTerrain(uint64_t ref)
+{
+	//lock_step()
+
+	const auto actor = refTerrains[ref];
+	actor->getScene()->removeActor(*actor);
+
+	refTerrains[ref]->release();
+	refTerrains[ref] = nullptr;
+	refTerrains.erase(ref);
+}
+
+EXPORT APIVec3 getTerrainPosition(uint64_t ref)
+{
+	//lock_step()
+
+	return ToVec3(refTerrains[ref]->getGlobalPose().p);
+}
+
+EXPORT void setTerrainPosition(uint64_t ref, APIVec3 p)
+{
+	//lock_step()
+
+	refPxRigidStatics[ref]->setGlobalPose(PxTransform(ToPxVec3(p)));
+}
+
 
 // get
 EXPORT APIVec3 getRigidStaticPosition(uint64_t ref)
@@ -768,8 +796,11 @@ static PxFilterFlags filterShader(
 
 PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 nbCols, PxU32 nbRows)
 {
-
+	debugLog("createHeighfieldDesc...");
 	PxU32 hfNumVerts = nbCols * nbRows;
+	debugLog(std::to_string(nbCols).c_str());
+
+	debugLog(std::to_string(hfNumVerts).c_str());
 
 	PxHeightFieldSample* samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
 	memset(samples, 0, hfNumVerts * sizeof(PxHeightFieldSample));
@@ -782,45 +813,53 @@ PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 
 			samples[x + y * nbRows].height = (PxI16)(h);
 		}
 
+	debugLog("..samples...");
 	PxHeightFieldDesc hfDesc;
+	
 	hfDesc.format = PxHeightFieldFormat::eS16_TM;
 	hfDesc.nbColumns = nbCols;
 	hfDesc.nbRows = nbRows;
 	hfDesc.samples.data = samples;
 	hfDesc.samples.stride = sizeof(PxHeightFieldSample);
-
+	debugLog("...createHeighfieldDesc");
 	return hfDesc;
 
 }
 
 
-EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, PxU32 hfSize, uint64_t refScene, uint64_t refMat, APIVec3 pos)
+EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, uint64_t hfSize, uint64_t refScene, uint64_t refMat, APIVec3 pos)
 {
-
+	debugLog("createTerrain...");
+	debugLog(std::to_string(hfScale).c_str());
+	debugLog(std::to_string(hfSize).c_str());
+	debugLog(std::to_string(refScene).c_str());
+	debugLog(std::to_string(refMat).c_str());
 	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize, hfSize);
 
+	debugLog("createHeightField");
 	PxHeightField* aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
-
+	
+	debugLog("hfGeom");
 	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), hfScale, hfScale, hfScale);
 	
-
+	debugLog("createRigidStatic");
 	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), PxQuat(PxIdentity)));
 
-	const auto insertRef = refOverlap++;
-	refPxRigidStatics.insert({ insertRef, rigid });
+	const auto insertRef = refTerrain++;
+	refTerrains.insert({ insertRef, rigid });
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
-	
+	debugLog("createExclusiveShape");
 	PxRigidActorExt::createExclusiveShape(*rigid, hfGeom, *refPxMaterials[refMat]);
 	refPxScenes[refScene]->addActor(*rigid);
 
 	return insertRef;
 }
 
-EXPORT void modifyTerrain(uint64_t ref, PxReal* heightmap, PxU32 startCol, PxU32 startRow, PxU32 nbCols, PxU32 nbRows, PxReal hfScale, bool shrinkBounds)
+EXPORT void modifyTerrain(uint64_t ref, PxReal* heightmap, uint64_t startCol, uint64_t startRow, uint64_t countCols, uint64_t countRows, PxReal heightScale, bool shrinkBounds)
 {
 	PxShape* shape;
-	refPxRigidStatics[ref]->getShapes(&shape, 1);
+	refTerrains[ref]->getShapes(&shape, 1);
 	if (shape->getGeometryType() != PxGeometryType::eHEIGHTFIELD) {
 
 		debugLogError("shape geometry is not heightfield");
@@ -828,7 +867,7 @@ EXPORT void modifyTerrain(uint64_t ref, PxReal* heightmap, PxU32 startCol, PxU32
 	}
 	const auto geo = shape->getGeometry().heightField();
 
-	auto subfieldDesc = createHeighfieldDesc(heightmap, hfScale, nbCols, nbRows);
+	auto subfieldDesc = createHeighfieldDesc(heightmap, heightScale, countCols, countRows);
 
 	subfieldDesc.thickness = geo.heightField->getThickness();
 	subfieldDesc.format = geo.heightField->getFormat();
@@ -965,7 +1004,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.4 terrain support");
+ 	debugLog("init physics native library v1.8.6 terrain support");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
