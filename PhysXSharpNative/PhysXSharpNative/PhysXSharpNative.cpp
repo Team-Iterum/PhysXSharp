@@ -179,6 +179,13 @@ EXPORT uint64_t createSphereGeometry(float radius)
 	return insertRef;
 }
 
+EXPORT uint64_t createCapsuleGeometry(PxReal radius, PxReal halfHeight)
+{
+	const SharedPxGeometry geo = std::make_shared<PxCapsuleGeometry>(radius, halfHeight);
+	insertMapNoUserData(SharedPxGeometry, geo)
+	return insertRef;
+}
+
 template<PxConvexMeshCookingType::Enum convexMeshCookingType, bool directInsertion, PxU32 gaussMapLimit>
 uint64_t createConvexMesh(PxU32 numVerts, const PxVec3* verts)
 {
@@ -794,62 +801,55 @@ static PxFilterFlags filterShader(
     return PxFilterFlag::eDEFAULT;
 }
 
-PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, PxU32 nbCols, PxU32 nbRows)
+PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, uint64_t nbCols, uint64_t nbRows, PxReal thickness = -1, PxReal convexEdgeThreshold = 0, bool noBoundaries = false)
 {
-	debugLog("createHeighfieldDesc...");
 	PxU32 hfNumVerts = nbCols * nbRows;
-	debugLog(std::to_string(nbCols).c_str());
 
-	debugLog(std::to_string(hfNumVerts).c_str());
-
-	PxHeightFieldSample* samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
+	auto samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
 	memset(samples, 0, hfNumVerts * sizeof(PxHeightFieldSample));
 
 	for (PxU32 x = 0; x < nbRows; x++)
 		for (PxU32 y = 0; y < nbCols; y++)
 		{
-			PxI32 h = PxI32(heightmap[y + x * nbRows] / hfScale);
+			PxI32 h = PxI32(heightmap[y + x * nbRows] * hfScale);
 			PXS_ASSERT(h <= 0xffff);
 			samples[x + y * nbRows].height = (PxI16)(h);
 		}
 
-	debugLog("..samples...");
 	PxHeightFieldDesc hfDesc;
 	
 	hfDesc.format = PxHeightFieldFormat::eS16_TM;
 	hfDesc.nbColumns = nbCols;
 	hfDesc.nbRows = nbRows;
+	hfDesc.thickness = thickness;
+	hfDesc.convexEdgeThreshold = convexEdgeThreshold;
+
+	if (noBoundaries)
+		hfDesc.flags = PxHeightFieldFlag::eNO_BOUNDARY_EDGES;
+
 	hfDesc.samples.data = samples;
 	hfDesc.samples.stride = sizeof(PxHeightFieldSample);
-	debugLog("...createHeighfieldDesc");
 	return hfDesc;
 
 }
 
 
-EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, uint64_t hfSize, uint64_t refScene, uint64_t refMat, APIVec3 pos)
+EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, uint64_t hfSize,
+							  PxReal thickness, PxReal convexEdgeThreshold, bool noBoundaries,
+							  PxReal heightScale, PxReal rowScale, PxReal columnScale,
+							  uint64_t refScene, uint64_t refMat, APIVec3 pos)
 {
-	debugLog("createTerrain...");
-	debugLog(std::to_string(hfScale).c_str());
-	debugLog(std::to_string(hfSize).c_str());
-	debugLog(std::to_string(refScene).c_str());
-	debugLog(std::to_string(refMat).c_str());
-	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize, hfSize);
+	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize, hfSize, thickness, convexEdgeThreshold, noBoundaries);
 
-	debugLog("createHeightField");
 	PxHeightField* aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
-	
-	debugLog("hfGeom");
-	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), hfScale, hfScale, hfScale);
-	
-	debugLog("createRigidStatic");
+
+	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), heightScale, rowScale, columnScale);
 	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), PxQuat(PxIdentity)));
 
-	const auto insertRef = refTerrain++;
+	const auto insertRef = refOverlap++;
 	refTerrains.insert({ insertRef, rigid });
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
-	debugLog("createExclusiveShape");
 	PxRigidActorExt::createExclusiveShape(*rigid, hfGeom, *refPxMaterials[refMat]);
 	refPxScenes[refScene]->addActor(*rigid);
 
@@ -1004,7 +1004,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.6 terrain support");
+ 	debugLog("init physics native library v1.8.8 capsule geometry");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
