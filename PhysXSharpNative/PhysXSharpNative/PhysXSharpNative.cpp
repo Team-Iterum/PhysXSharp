@@ -801,23 +801,26 @@ static PxFilterFlags filterShader(
     return PxFilterFlag::eDEFAULT;
 }
 
-PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, uint64_t nbCols, uint64_t nbRows, PxReal thickness = -1, PxReal convexEdgeThreshold = 0, bool noBoundaries = false)
+PxHeightFieldDesc createHeighfieldDesc(const PxI16* heightmap, const uint64_t nbCols, const uint64_t nbRows,
+                                       const PxReal thickness = -1, const PxReal convexEdgeThreshold = 0,
+                                       const bool noBoundaries = false)
 {
-	PxU32 hfNumVerts = nbCols * nbRows;
+	const PxU32 hfNumVerts = nbCols * nbRows;
 
-	auto samples = (PxHeightFieldSample*)platformAlignedAlloc(sizeof(PxHeightFieldSample) * hfNumVerts);
+	const auto samples = static_cast<PxHeightFieldSample*>(platformAlignedAlloc(
+		sizeof(PxHeightFieldSample) * hfNumVerts));
 	memset(samples, 0, hfNumVerts * sizeof(PxHeightFieldSample));
 
 	for (PxU32 x = 0; x < nbRows; x++)
+	{
 		for (PxU32 y = 0; y < nbCols; y++)
 		{
-			PxI32 h = PxI32(heightmap[y + x * nbRows] * hfScale);
-			PXS_ASSERT(h <= 0xffff);
-			samples[x + y * nbRows].height = (PxI16)(h);
+			samples[x + y * nbRows].height = heightmap[y + x * nbRows];
 		}
+	}
 
 	PxHeightFieldDesc hfDesc;
-	
+
 	hfDesc.format = PxHeightFieldFormat::eS16_TM;
 	hfDesc.nbColumns = nbCols;
 	hfDesc.nbRows = nbRows;
@@ -830,24 +833,23 @@ PxHeightFieldDesc createHeighfieldDesc(PxReal* heightmap, PxReal hfScale, uint64
 	hfDesc.samples.data = samples;
 	hfDesc.samples.stride = sizeof(PxHeightFieldSample);
 	return hfDesc;
-
 }
 
 
-EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, uint64_t hfSize,
+EXPORT uint64_t createTerrain(PxI16* heightmap, uint64_t hfSize,
 							  PxReal thickness, PxReal convexEdgeThreshold, bool noBoundaries,
 							  PxReal heightScale, PxReal rowScale, PxReal columnScale,
 							  uint64_t refScene, uint64_t refMat, APIVec3 pos)
 {
-	auto hfDesc = createHeighfieldDesc(heightmap, hfScale, hfSize, hfSize, thickness, convexEdgeThreshold, noBoundaries);
+	const auto hfDesc = createHeighfieldDesc(heightmap, hfSize, hfSize, thickness, convexEdgeThreshold, noBoundaries);
 
-	PxHeightField* aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
+	const auto aHeightField = gCooking->createHeightField(hfDesc, gPhysics->getPhysicsInsertionCallback());
 
-	PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), heightScale, rowScale, columnScale);
+	const PxHeightFieldGeometry hfGeom(aHeightField, PxMeshGeometryFlags(), heightScale, rowScale, columnScale);
 	const auto rigid = gPhysics->createRigidStatic(PxTransform(ToVec3(pos), PxQuat(PxIdentity)));
 
 	const auto insertRef = refOverlap++;
-	refTerrains.insert({ insertRef, rigid });
+	refTerrains.insert({insertRef, rigid});
 	rigid->userData = reinterpret_cast<void*>(insertRef);
 
 	PxRigidActorExt::createExclusiveShape(*rigid, hfGeom, *refPxMaterials[refMat]);
@@ -856,7 +858,7 @@ EXPORT uint64_t createTerrain(PxReal* heightmap, PxReal hfScale, uint64_t hfSize
 	return insertRef;
 }
 
-EXPORT void modifyTerrain(uint64_t ref, PxReal* heightmap, uint64_t startCol, uint64_t startRow, uint64_t countCols, uint64_t countRows, PxReal heightScale, bool shrinkBounds)
+EXPORT void modifyTerrain(uint64_t ref, PxI16* heightmap, uint64_t startCol, uint64_t startRow, uint64_t countCols, uint64_t countRows, PxReal heightScale, bool shrinkBounds)
 {
 	PxShape* shape;
 	refTerrains[ref]->getShapes(&shape, 1);
@@ -1004,7 +1006,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.8 capsule geometry");
+ 	debugLog("init physics native library v1.8.10 terrain samples fix");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
@@ -1024,6 +1026,8 @@ void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float 
 	}
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale,true,gPvd);
+
+	PxRegisterUnifiedHeightFields(*gPhysics);
 
 	gDispatcher = PxDefaultCpuDispatcherCreate(numThreads);
 	
