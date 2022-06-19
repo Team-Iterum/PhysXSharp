@@ -16,6 +16,7 @@ refMap(PxControllerManager)
 uint64_t refOverlap;
 map<uint64_t, PxController*> refPxControllers;
 map<uint64_t, PxVec3> refControllersDir;
+map<uint64_t, PxControllerCollisionFlags> refControllersFlags;
 
 map<uint64_t, PxRigidStatic*> refPxRigidStatics;
 map<uint64_t, PxRigidDynamic*> refPxRigidDynamics;
@@ -59,13 +60,14 @@ EXPORT void characterUpdate(uint64_t ref, float elapsed, float minDist)
 EXPORT void charactersUpdate(uint64_t refScene, float elapsed, float minDist)
 {
 	//lock_step()
-	auto controllers = refPxControllerManagers[refScene];
+	const auto controllers = refPxControllerManagers[refScene];
 	for (size_t i = 0; i < controllers->getNbControllers(); i++)
 	{
-		auto controller = controllers->getController(i);
+		const auto controller = controllers->getController(i);
 		const auto ref = reinterpret_cast<uint64_t>(controller->getUserData());
 
-		controller->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
+		refControllersFlags[ref] = controller->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
+		
 	}
 }
 
@@ -73,6 +75,15 @@ EXPORT void charactersUpdate(uint64_t refScene, float elapsed, float minDist)
 EXPORT void setControllerDirection(uint64_t ref, APIVec3 dir)
 {
 	refControllersDir[ref] = ToPxVec3(dir);
+}
+
+EXPORT bool isControllerCollisionUp(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_UP); }
+EXPORT bool isControllerCollisionDown(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_DOWN); }
+EXPORT bool isControllerCollisionSides(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_SIDES); }
+EXPORT bool isControllerMovingUp(uint64_t ref) {
+	PxControllerState state;
+	refPxControllers[ref]->getState(state);
+	return state.isMovingUp;
 }
 
 
@@ -725,6 +736,7 @@ EXPORT uint64_t createCapsuleCharacter(uint64_t refScene, uint64_t refMat, APIVe
 	
 	refPxControllers.insert({insertRef, c});
 	refControllersDir.insert({insertRef, PxVec3(0, 0, 0)});
+	refControllersFlags.insert({ insertRef, PxControllerCollisionFlag::eCOLLISION_SIDES});
 
 	return insertRef;
 }
@@ -1006,7 +1018,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.10 terrain samples fix");
+ 	debugLog("init physics native library v1.8.11 character methods");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
