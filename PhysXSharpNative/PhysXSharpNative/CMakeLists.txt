@@ -5,8 +5,13 @@ cmake_minimum_required (VERSION 3.8)
 
 if (UNIX AND NOT APPLE)
 	set(LINUX TRUE)
+	set(LINUX_AARCH64 TRUE)
 	message(STATUS ">>> Linux")
 endif(UNIX AND NOT APPLE)
+
+if(LINUX_AARCH64)
+	message(STATUS ">>> Linux AARCH64")
+endif(LINUX_AARCH64)
 
 if (APPLE)
 	set(MACOS TRUE)
@@ -63,67 +68,123 @@ if (WIN)
 endif (WIN)
 
 if (LINUX)
-	link_directories("../../Prebuilt/physx3.4_linux64/release/lib/")
-	link_directories("../../Prebuilt/physx3.4_linux64/release/bin/")
+	if(LINUX_AARCH64)
+		link_directories("../../Prebuilt/physx3.4_linux_aarch64/release/lib/")
+		link_directories("../../Prebuilt/physx3.4_linux_aarch64/release/bin/")
 
-	link_libraries(
+		link_libraries(
 
-		libPhysX3CharacterKinematic_x64.so
-		libPhysX3Common_x64.so
-		libPhysX3Cooking_x64.so
-		libPhysX3_x64.so	
+			libPhysXCommon_64.so
+			libPhysXCooking_64.so
+			libPhysX_64.so
 
-		libPxFoundation_x64.so
-		libPxPvdSDK_x64.so
+			libPhysXFoundation_64.so
 
-		libLowLevel.a
-		libLowLevelAABB.a
-		libLowLevelCloth.a
-		libLowLevelDynamics.a
-		libLowLevelParticles.a
-		libPhysX3Extensions.a
-		libPhysX3Vehicle.a
-		libSceneQuery.a
-		libSimulationController.a
 
-		libPsFastXml.a
-		libPxTask.a
+			libPhysX_static_64.a
 
-		Threads::Threads
-	)
+			libPhysXCharacterKinematic_static_64.a
+			libPhysXCommon_static_64.a
+			libPhysXCooking_static_64.a
+			libPhysXExtensions_static_64.a
+
+			libPhysXFoundation_static_64.a
+			libPhysXPvdSDK_static_64.a
+			libPhysXVehicle_static_64.a
+
+			Threads::Threads
+		)
+	else
+		link_directories("../../Prebuilt/physx3.4_linux64/release/lib/")
+		link_directories("../../Prebuilt/physx3.4_linux64/release/bin/")
+
+		link_libraries(
+
+			libPhysX3CharacterKinematic_x64.so
+			libPhysX3Common_x64.so
+			libPhysX3Cooking_x64.so
+			libPhysX3_x64.so	
+
+			libPxFoundation_x64.so
+			libPxPvdSDK_x64.so
+
+			libLowLevel.a
+			libLowLevelAABB.a
+			libLowLevelCloth.a
+			libLowLevelDynamics.a
+			libLowLevelParticles.a
+			libPhysX3Extensions.a
+			libPhysX3Vehicle.a
+			libSceneQuery.a
+			libSimulationController.a
+
+			libPsFastXml.a
+			libPxTask.a
+
+			Threads::Threads
+		)
+	endif (LINUX_AARCH64)
+
 endif (LINUX)
 
 add_library (PhysXSharpNative SHARED "PhysXSharpNative.cpp" "PhysXSharpNative.h")
 
 
 if (LINUX)
-	target_link_libraries(PhysXSharpNative
-	    
-	    libPhysX3CharacterKinematic_x64.so
-		libPhysX3Common_x64.so
-		libPhysX3Cooking_x64.so
-		libPhysX3_x64.so	
+	if(LINUX_AARCH64)
+		target_link_libraries(PhysXSharpNative
+		    
+		    libPhysXCommon_64.so
+			libPhysXCooking_64.so
+			libPhysX_64.so
 
-		libPxFoundation_x64.so
-		libPxPvdSDK_x64.so
+			libPhysXFoundation_64.so
 
-		libLowLevel.a
-		libLowLevelAABB.a
-		libLowLevelCloth.a
-		libLowLevelDynamics.a
-		libLowLevelParticles.a
-		libPhysX3Extensions.a
-		libPhysX3Vehicle.a
-		libSceneQuery.a
-		libSimulationController.a
 
-		libPsFastXml.a
-		libPxTask.a
-		
-		Threads::Threads
+			libPhysX_static_64.a
 
-		${CMAKE_DL_LIBS}
-	)
+			libPhysXCharacterKinematic_static_64.a
+			libPhysXCommon_static_64.a
+			libPhysXCooking_static_64.a
+			libPhysXExtensions_static_64.a
+
+			libPhysXFoundation_static_64.a
+			libPhysXPvdSDK_static_64.a
+			libPhysXVehicle_static_64.a
+
+			Threads::Threads
+			
+			${CMAKE_DL_LIBS}
+		)
+	else
+		target_link_libraries(PhysXSharpNative
+		    
+		    libPhysX3CharacterKinematic_x64.so
+			libPhysX3Common_x64.so
+			libPhysX3Cooking_x64.so
+			libPhysX3_x64.so	
+
+			libPxFoundation_x64.so
+			libPxPvdSDK_x64.so
+
+			libLowLevel.a
+			libLowLevelAABB.a
+			libLowLevelCloth.a
+			libLowLevelDynamics.a
+			libLowLevelParticles.a
+			libPhysX3Extensions.a
+			libPhysX3Vehicle.a
+			libSceneQuery.a
+			libSimulationController.a
+
+			libPsFastXml.a
+			libPxTask.a
+			
+			Threads::Threads
+
+			${CMAKE_DL_LIBS}
+		)
+	endif (LINUX_AARCH64)
 endif (LINUX)
 
 if (MACOS)
