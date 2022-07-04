@@ -94,7 +94,7 @@ if (LINUX)
 
 			Threads::Threads
 		)
-	else
+	else()
 		link_directories("../../Prebuilt/physx3.4_linux64/release/lib/")
 		link_directories("../../Prebuilt/physx3.4_linux64/release/bin/")
 
@@ -156,7 +156,7 @@ if (LINUX)
 			
 			${CMAKE_DL_LIBS}
 		)
-	else
+	else()
 		target_link_libraries(PhysXSharpNative
 		    
 		    libPhysX3CharacterKinematic_x64.so
