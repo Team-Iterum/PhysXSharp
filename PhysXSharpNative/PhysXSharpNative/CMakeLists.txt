@@ -32,6 +32,7 @@ set(PHYSX_SDK "../../PhysX")
 
 include_directories("${PHYSX_SDK}/PxShared/include")
 include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
+include_directories("${PHYSX_SDK}/physx/include")
 
 if (MACOS)
     link_directories("../../Prebuilt/physx3.4_osx64/libChecked/")
