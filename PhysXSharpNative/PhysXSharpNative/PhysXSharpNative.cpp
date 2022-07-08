@@ -321,7 +321,13 @@ void createBV34TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 
     // Cooking mesh with less triangles per leaf produces larger meshes with better runtime performance
     // and worse cooking performance. Cooking time is better when more triangles per leaf are used.
+#if PX_PHYSICS_VERSION_MAJOR==3
     params.midphaseDesc.mBVH34Desc.numTrisPerLeaf = numTrisPerLeaf;
+#else
+	params.midphaseDesc.mBVH34Desc.numPrimsPerLeaf = numTrisPerLeaf;
+#endif
+
+
 
     gCooking->setParams(params);
     
@@ -836,7 +842,7 @@ PxHeightFieldDesc createHeighfieldDesc(const PxI16* heightmap, const uint64_t nb
 	hfDesc.format = PxHeightFieldFormat::eS16_TM;
 	hfDesc.nbColumns = nbCols;
 	hfDesc.nbRows = nbRows;
-	hfDesc.thickness = thickness;
+	// hfDesc.thickness = thickness;
 	hfDesc.convexEdgeThreshold = convexEdgeThreshold;
 
 	if (noBoundaries)
@@ -883,7 +889,7 @@ EXPORT void modifyTerrain(uint64_t ref, PxI16* heightmap, uint64_t startCol, uin
 
 	auto subfieldDesc = createHeighfieldDesc(heightmap, heightScale, countCols, countRows);
 
-	subfieldDesc.thickness = geo.heightField->getThickness();
+	// subfieldDesc.thickness = geo.heightField->getThickness();
 	subfieldDesc.format = geo.heightField->getFormat();
 	subfieldDesc.flags = geo.heightField->getFlags();
 
@@ -1018,11 +1024,11 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.11 character methods");
+ 	debugLog("init physics native library v1.8.12 cross-version update");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
-	gFoundation = PxCreateFoundation(0x01000000, gAllocator, *gErrorCallback);
+	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
 
 	PxTolerancesScale scale;
 	scale.length = toleranceLength;        // typical length of an object
@@ -1039,7 +1045,12 @@ void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float 
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale,true,gPvd);
 
+#if PX_PHYSICS_VERSION_MAJOR==3
 	PxRegisterUnifiedHeightFields(*gPhysics);
+#else
+	PxRegisterHeightFields(*gPhysics);
+#endif
+	
 
 	gDispatcher = PxDefaultCpuDispatcherCreate(numThreads);
 	
