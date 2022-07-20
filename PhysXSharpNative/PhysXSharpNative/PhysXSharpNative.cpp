@@ -77,6 +77,11 @@ EXPORT void setControllerDirection(uint64_t ref, APIVec3 dir)
 	refControllersDir[ref] = ToPxVec3(dir);
 }
 
+EXPORT void setControllerHeight(uint64_t ref, PxReal height)
+{
+	refPxControllers[ref]->resize(height);
+}
+
 EXPORT bool isControllerCollisionUp(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_UP); }
 EXPORT bool isControllerCollisionDown(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_DOWN); }
 EXPORT bool isControllerCollisionSides(uint64_t ref) { return refControllersFlags[ref].isSet(PxControllerCollisionFlag::eCOLLISION_SIDES); }
@@ -881,6 +886,25 @@ EXPORT uint64_t createTerrain(PxI16* heightmap, uint64_t hfSize,
 	return insertRef;
 }
 
+
+
+EXPORT PxReal sampleTerrainHeight(uint64_t ref, APIVec3 position)
+{
+	PxShape* shape;
+	refTerrains[ref]->getShapes(&shape, 1);
+	if (shape->getGeometryType() != PxGeometryType::eHEIGHTFIELD) {
+
+		debugLogError("shape geometry is not heightfield");
+		return 0;
+	}
+	const auto geo = shape->getGeometry().heightField();
+	
+	const auto height = geo.heightField->getHeight(position.x, position.z);
+
+	return height;
+}
+
+
 EXPORT void modifyTerrain(uint64_t ref, PxI16* heightmap, uint64_t startCol, uint64_t startRow, uint64_t countCols, uint64_t countRows, PxReal heightScale, bool shrinkBounds)
 {
 	PxShape* shape;
@@ -1029,7 +1053,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.8.12 cross-version update");
+ 	debugLog("init physics native library v1.9.0 character height + terrain samnples");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
