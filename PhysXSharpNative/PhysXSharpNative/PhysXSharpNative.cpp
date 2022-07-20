@@ -268,6 +268,11 @@ void createBV33TriangleMesh(const char* name, PxU32 numVertices, const PxVec3* v
 
 	gCooking->cookTriangleMesh(meshDesc, outBuffer);
 
+
+    // Print the elapsed time for comparison
+    printf("\t -----------------------------------------------\n");
+    printf("\t Create (BV33) triangle mesh with %d triangles: \n", numTriangles);
+
 }
 
 // Setup common cooking params
@@ -348,7 +353,7 @@ void createTriangleMesh(const char* name, PxVec3 vertices[], int pointsCount, ui
 {
     // Favor runtime speed, cleaning the mesh and precomputing active edges. Store the mesh in a stream.
     // These are the default settings, suitable for offline cooking.
-    createBV34TriangleMesh(name, pointsCount, vertices, triCount, indices, false, false, 4);
+    createBV33TriangleMesh(name, pointsCount, vertices, triCount, indices);
 }
 
 uint64_t loadTriangleMesh(const char* name)
