@@ -159,7 +159,7 @@ EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 or
         const auto touch = buffer.touches[i];
         const auto ref = reinterpret_cast<uint64_t>(touch.actor->userData);
         
-        callback(i, ref);
+        callback(i, ref, touch.distance, ToVec3(touch.position), ToVec3(touch.normal));
     }
 
     return buffer.nbTouches;
@@ -905,6 +905,42 @@ EXPORT PxReal sampleTerrainHeight(uint64_t ref, APIVec3 position)
 }
 
 
+
+
+EXPORT PxU16 sampleTerrainHeightRowCol(uint64_t ref, PxU32 row, PxU32 col)
+{
+	PxShape* shape;
+	refTerrains[ref]->getShapes(&shape, 1);
+	if (shape->getGeometryType() != PxGeometryType::eHEIGHTFIELD) {
+
+		debugLogError("shape geometry is not heightfield");
+		return 0;
+	}
+	const auto geo = shape->getGeometry().heightField();
+
+	const auto height = geo.heightField->getSample(row, col).height;
+
+	return height;
+}
+
+EXPORT PxReal sampleTerrainHeightNorm(uint64_t ref, APIVec3 normPos)
+{
+	PxShape* shape;
+	refTerrains[ref]->getShapes(&shape, 1);
+	if (shape->getGeometryType() != PxGeometryType::eHEIGHTFIELD) {
+
+		debugLogError("shape geometry is not heightfield");
+		return 0;
+	}
+	const auto geo = shape->getGeometry().heightField();
+
+	const auto height = geo.heightField->getSample(static_cast<PxU32>(normPos.x * geo.heightField->getNbRows()),
+	                                               static_cast<PxU32>(normPos.z * geo.heightField->getNbColumns())).height;
+
+	return height;
+}
+
+
 EXPORT void modifyTerrain(uint64_t ref, PxI16* heightmap, uint64_t startCol, uint64_t startRow, uint64_t countCols, uint64_t countRows, PxReal heightScale, bool shrinkBounds)
 {
 	PxShape* shape;
@@ -1053,7 +1089,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.0 character height + terrain samnples");
+ 	debugLog("init physics native library v1.9.1 raycast callback + new samples methods");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
