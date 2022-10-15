@@ -63,7 +63,7 @@ struct APITransform
     APIVec3 p;
 };
 
-typedef void (*OverlapCallback)(int index, uint64_t t1);
+typedef void (*OverlapCallback)(uint64_t* refs);
 typedef void (*RaycastCallback)(int index, uint64_t t1, physx::PxF32 distance, APIVec3 position, APIVec3 normal);
 typedef void (*ErrorCallbackFunc)(const char* message);
 typedef void (*DebugLogFunc)(const char* message);
