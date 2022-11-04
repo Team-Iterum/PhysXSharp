@@ -166,13 +166,17 @@ EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 or
 }
 
 
-EXPORT int sceneOverlap(uint64_t refScene, uint64_t refBuffer, uint64_t* refs, uint64_t refGeo, APIVec3 pos)
+EXPORT int sceneOverlap(uint64_t refScene, uint64_t refBuffer, uint64_t* refs, uint64_t refGeo, APIVec3 pos, uint32_t allDynamicStatic)
 {
 	// lock_step()
 
     auto buffer = *refOverlapBuffers[refBuffer];
 
-    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer);
+	auto flags = PxQueryFilterData(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC);
+	if (allDynamicStatic == 1) flags = PxQueryFilterData(PxQueryFlag::eDYNAMIC);
+	if (allDynamicStatic == 2) flags = PxQueryFilterData(PxQueryFlag::eSTATIC);
+
+    refPxScenes[refScene]->overlap(*refSharedPxGeometrys[refGeo], PxTransform(ToPxVec3(pos)), buffer, flags);
 
 
     for (PxU32 i = 0; i < buffer.nbTouches; ++i)
@@ -1100,7 +1104,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.5 id collisions fix + overlap buffers");
+ 	debugLog("init physics native library v1.9.6 all / static / dynamic sphere cast");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
