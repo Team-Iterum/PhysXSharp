@@ -145,6 +145,18 @@ EXPORT uint64_t createRaycastBuffer(uint32_t max)
 	return insertRef;
 }
 
+EXPORT void cleanupRaycastBuffer(uint64_t ref)
+{
+	refRaycastBuffers[ref] = nullptr;
+	refRaycastBuffers.erase(ref);
+}
+
+EXPORT void cleanupOverlapBuffer(uint64_t ref)
+{
+	refOverlapBuffers[ref] = nullptr;
+	refOverlapBuffers.erase(ref);
+}
+
 
 EXPORT int sceneRaycast(uint64_t refScene, uint64_t refRaycastBuffer, APIVec3 origin, APIVec3 unitDir, float distance, RaycastCallback callback)
 {
@@ -996,6 +1008,7 @@ EXPORT uint64_t createScene(APIVec3 gravity, ContactReportCallbackFunc func, Tri
 
 	auto controllerManager = PxCreateControllerManager(*scene, false);
 	refPxControllerManagers.insert({insertRef, controllerManager});;
+	
 	refPxScenes.insert({insertRef, scene});
 	refContactReports.insert({insertRef, contactReport});
 	refOverlaps.insert({ insertRef, 0 });
@@ -1104,7 +1117,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.6 all / static / dynamic sphere cast");
+ 	debugLog("init physics native library v1.9.8 cleanup buffers");
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
