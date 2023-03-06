@@ -12,8 +12,9 @@ Build instructions
 - CMake
 - g++, clang
 
-### Linux
+### Linux 
 
+For PhysX 3.4
 ```bash
 cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3CharacterKinematic_x64.so /root/libs  
 cp ../../PhysX/PhysX_3.4/Bin/linux64/libPhysX3Common_x64.so             /root/libs  
@@ -25,11 +26,3 @@ cp ../../PhysX/PxShared/bin/linux64/libPxPvdSDK_x64.so                  /root/li
 
 cp /root/libs/* /root/deploy
 ```
-
-*App launch*  
-
-```bash
-LD_LIBRARY_PATH=. ./App
-```
-
-### MacOS
