@@ -760,7 +760,7 @@ EXPORT void destroyRigidDynamic(uint64_t refScene, uint64_t ref)
 	
 	refPxRigidDynamics[refScene][ref]->release();
 	refPxRigidDynamics[refScene][ref] = nullptr;
-	refPxRigidDynamics.erase(ref);
+	refPxRigidDynamics[refScene].erase(ref);
 }
 
 /// CAPSULE CHARACTER
