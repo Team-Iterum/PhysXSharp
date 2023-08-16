@@ -3,6 +3,9 @@
 #include <fstream>
 #include <string>
 #include <filesystem>
+#include <chrono>
+#include <thread>
+
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -10,7 +13,7 @@ namespace fs = std::filesystem;
 
 int main (int argc, const char* argv[])
 {
-    cout << "PhysXSharpNative Mesh Utility 1.1" << endl;
+    cout << "PhysXSharpNative Mesh Utility 1.2" << endl;
     cout << "Help args: ./MeshUtility [basePath]" << endl;
     
     const int numThreads = 2;
@@ -73,7 +76,10 @@ int main (int argc, const char* argv[])
         
         createTriangleMesh(finalPath.c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
         
+      
         cout << endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 
     return 0;
