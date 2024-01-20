@@ -30,10 +30,11 @@ find_package(Threads REQUIRED)
 
 set(PHYSX_SDK "../../PhysX")
 
-include_directories("${PHYSX_SDK}/PxShared/include")
-include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
+# --- physx 3.4
+# include_directories("${PHYSX_SDK}/PxShared/include")
+# include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 
-# physx 4.1
+# --- physx 4.1
 include_directories("${PHYSX_SDK}/pxshared/include")
 include_directories("${PHYSX_SDK}/physx/include")
 
@@ -42,31 +43,53 @@ if (MACOS)
 endif (MACOS)
 
 if (WIN)
-    link_directories("../../Prebuilt/physx3.4_win64/")
+    link_directories("../../Prebuilt/physx4.1_win64/")
 
     link_libraries(
 
-		PhysX3CharacterKinematicPROFILE_x64.dll
-		PhysX3CommonPROFILE_x64.dll
-		PhysX3CookingPROFILE_x64.dll
-		PhysX3PROFILE_x64.dll
+    	# --- physx 3.4
+
+		# PhysX3CharacterKinematicPROFILE_x64.dll
+		# PhysX3CommonPROFILE_x64.dll
+		# PhysX3CookingPROFILE_x64.dll
+		# PhysX3PROFILE_x64.dll
+
+		# PxFoundationPROFILE_x64.lib
+		# PxPvdSDKPROFILE_x64.lib
+
+		# LowLevelPROFILE.lib
+		# LowLevelAABBPROFILE.lib
+		# LowLevelClothPROFILE.lib
+		# LowLevelDynamicsPROFILE.lib
+		# LowLevelParticlesPROFILE.lib
+		# PhysX3ExtensionsPROFILE.lib
+		# PhysX3VehiclePROFILE.lib
+		# SceneQueryPROFILE.lib
+		# SimulationControllerPROFILE.lib
+
+		# PsFastXmlPROFILE_x64.lib
+		# PxTaskPROFILE_x64.lib
 
 
-		PxFoundationPROFILE_x64.lib
-		PxPvdSDKPROFILE_x64.lib
+		PhysXFoundation_64.dll
+		PhysXCommon_64.dll
+		PhysXCooking_64.dll
+		PhysX_64.dll
 
-		LowLevelPROFILE.lib
-		LowLevelAABBPROFILE.lib
-		LowLevelClothPROFILE.lib
-		LowLevelDynamicsPROFILE.lib
-		LowLevelParticlesPROFILE.lib
-		PhysX3ExtensionsPROFILE.lib
-		PhysX3VehiclePROFILE.lib
-		SceneQueryPROFILE.lib
-		SimulationControllerPROFILE.lib
-
-		PsFastXmlPROFILE_x64.lib
-		PxTaskPROFILE_x64.lib
+		LowLevel_static_64.lib
+		LowLevelAABB_static_64.lib
+		LowLevelDynamics_static_64.lib
+		PhysX_64.lib
+		PhysXCharacterKinematic_static_64.lib
+		PhysXCommon_64.lib
+		PhysXCooking_64.lib
+		PhysXExtensions_static_64.lib
+		PhysXFoundation_64.lib
+		PhysXPvdSDK_static_64.lib
+		PhysXTask_static_64.lib
+		PhysXVehicle_static_64.lib
+		SceneQuery_static_64.lib
+		SimulationController_static_64.lib
 	)
 
 endif (WIN)

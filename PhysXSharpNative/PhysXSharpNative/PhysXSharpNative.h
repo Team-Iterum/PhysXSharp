@@ -63,6 +63,12 @@ struct APITransform
     APIVec3 p;
 };
 
+struct APIBounds3 
+{
+    APIVec3 minimum;
+    APIVec3 maximum;
+};
+
 typedef void (*OverlapCallback)(uint64_t* refs);
 typedef void (*RaycastCallback)(int index, uint64_t t1, physx::PxF32 distance, APIVec3 position, APIVec3 normal);
 typedef void (*ErrorCallbackFunc)(const char* message);
@@ -79,6 +85,7 @@ typedef void (*TriggerReportCallbackFunc)(const uint64_t ref0, const uint64_t re
 #define ToVec3d(v) { v.x, v.y, v.z }
 #define ToQuat(q) { q.x, q.y, q.z, q.w }
 #define ToTrans(t) { ToQuat(t.q), ToVec3(t.p) }
+#define ToBounds3(b) { ToVec3(b.minimum), ToVec3(b.maximum) }
 
 #define PX_RELEASE(x) if(x) { x->release(); x = nullptr; }
 #define refMap(x) map<uint64_t, x*> ref##x##s; uint64_t refCount##x;
