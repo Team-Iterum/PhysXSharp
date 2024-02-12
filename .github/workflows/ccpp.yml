@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: get-cmake
-      uses: MagistrAVSH/get-cmake@main
+      uses: lukka/get-cmake@lates
     - uses: actions/checkout@v2
     - name: Checkout submodules
       run: |
