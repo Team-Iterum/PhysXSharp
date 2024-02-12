@@ -647,7 +647,10 @@ EXPORT void setRigidDynamicMaxLinearVelocity(uint64_t refScene, uint64_t ref, fl
 {
 	//lock_step()
 	
+#if PX_PHYSICS_VERSION_MAJOR==3
 	refPxRigidDynamics[refScene][ref]->setMaxLinearVelocity(v);
+#endif
+
 }
 EXPORT void setRigidDynamicMaxAngularVelocity(uint64_t refScene, uint64_t ref, float v)
 {
@@ -701,12 +704,19 @@ EXPORT float getRigidDynamicMaxAngularVelocity(uint64_t refScene, uint64_t ref)
 {
 	//lock_step()
 	return refPxRigidDynamics[refScene][ref]->getMaxAngularVelocity();
+	
+
 }
 EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t refScene, uint64_t ref)
 {
 	//lock_step()
 
-    return refPxRigidDynamics[refScene][ref]->getMaxLinearVelocity();
+#if PX_PHYSICS_VERSION_MAJOR==3
+	return refPxRigidDynamics[refScene][ref]->getMaxAngularVelocity();
+#else
+	return 0
+#endif
+    
 }
 
 
