@@ -27,7 +27,7 @@ jobs:
         mkdir build
         mkdir build-zip
         cp PhysXSharpNative/PhysXSharpNative/libPhysXSharpNative.so build
-        cp -r Prebuilt/physx4.1_linux_aarch64/release/bin/* build
+        cp -r Prebuilt/physx3.4_linux64/release/bin/* build
     - name: Easy Zip Files
       uses: papeloto/action-zip@v1
       with:
