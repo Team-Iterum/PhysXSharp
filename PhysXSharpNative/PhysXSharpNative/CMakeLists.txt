@@ -31,12 +31,12 @@ find_package(Threads REQUIRED)
 set(PHYSX_SDK "../../PhysX")
 
 # --- physx 3.4
-# include_directories("${PHYSX_SDK}/PxShared/include")
-# include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
+include_directories("${PHYSX_SDK}/PxShared/include")
+include_directories("${PHYSX_SDK}/PhysX_3.4/Include")
 
 # --- physx 4.1
-#include_directories("${PHYSX_SDK}/pxshared/include")
-#include_directories("${PHYSX_SDK}/physx/include")
+# include_directories("${PHYSX_SDK}/pxshared/include")
+# include_directories("${PHYSX_SDK}/physx/include")
 
 if (MACOS)
     link_directories("../../Prebuilt/physx3.4_osx64/libChecked/")
