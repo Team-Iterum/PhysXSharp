@@ -41,4 +41,14 @@ std::string getMeshName(unsigned int meshId)
     return str.str();
 }
 
+bool endsWithSubstring(
+    const std::string& str,
+    const std::string& subStr) {
+    size_t strLen = str.length();
+    size_t subStrLen = subStr.length();
+    // Use the compare() member function to
+    // check if the string ends with the substring
+    return  strLen >= subStrLen &&
+        str.compare(strLen - subStrLen, subStrLen, subStr) == 0;
+}
 
