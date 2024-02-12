@@ -714,7 +714,7 @@ EXPORT float getRigidDynamicMaxLinearVelocity(uint64_t refScene, uint64_t ref)
 #if PX_PHYSICS_VERSION_MAJOR==4
 	return refPxRigidDynamics[refScene][ref]->getMaxLinearVelocity();
 #else
-	return 0
+	return 0;
 #endif
     
 }
