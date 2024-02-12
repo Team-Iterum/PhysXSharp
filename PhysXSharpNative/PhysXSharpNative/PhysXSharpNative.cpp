@@ -1144,20 +1144,20 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.9.1.4 get bounds");
+ 	debugLog("init physics native library v1.9.9.1.6 version check");
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MAJOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MINOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_BUGFIX).c_str());
 
 	gErrorCallback = std::make_shared<ErrorCallback>(func);
 	
-	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, *gErrorCallback);
+	gFoundation = PxCreateFoundation(0x01000000, gAllocator, *gErrorCallback);
 
 	PxTolerancesScale scale;
 	scale.length = toleranceLength;        // typical length of an object
 	scale.speed = toleranceSpeed;        // typical speed of an object, gravity*1s is a reasonable choice
 
-	gCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
+	gCooking = PxCreateCooking(0x01000000, *gFoundation, PxCookingParams(scale));
 	
 	if(isCreatePvd)
 	{
@@ -1166,7 +1166,7 @@ void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float 
         gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
 	}
 
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale,true,gPvd);
+	gPhysics = PxCreatePhysics(0x01000000, *gFoundation, scale,true,gPvd);
 
 #if PX_PHYSICS_VERSION_MAJOR==3
 	PxRegisterUnifiedHeightFields(*gPhysics);
