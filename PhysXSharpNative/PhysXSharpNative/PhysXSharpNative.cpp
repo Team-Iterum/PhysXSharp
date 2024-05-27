@@ -53,7 +53,7 @@ std::shared_ptr<ErrorCallback> gErrorCallback;
 EXPORT void characterUpdate(uint64_t ref, float elapsed, float minDist)
 {
 	//lock_step()
-	refPxControllers[ref]->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
+	refControllersFlags[ref] = refPxControllers[ref]->move(refControllersDir[ref], minDist, elapsed, PxControllerFilters());
 }
 
 
@@ -1144,7 +1144,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.9.1.8 version check 2");
+ 	debugLog("init physics native library v1.9.9.1.9 controller single update");
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MAJOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MINOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_BUGFIX).c_str());
