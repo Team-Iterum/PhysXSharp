@@ -4,6 +4,7 @@ on:
     # Sequence of patterns matched against refs/tags
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
 # make
 jobs:
   build:
@@ -13,11 +14,13 @@ jobs:
     steps:
     - name: get-cmake
       uses: lukka/get-cmake@latest
-    - uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: |
-        git submodule sync
-        git submodule update --init --recursive
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Show contents
+      run: ls -R ./
+
     - name: cmake
       run: cd PhysXSharpNative; cmake .
     - name: make
