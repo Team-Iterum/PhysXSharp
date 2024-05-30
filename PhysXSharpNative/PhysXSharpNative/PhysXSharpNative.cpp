@@ -1148,7 +1148,7 @@ void initLog(DebugLogFunc func, DebugLogErrorFunc func2)
 
 void initPhysics(bool isCreatePvd, int numThreads, float toleranceLength, float toleranceSpeed, ErrorCallbackFunc func)
 {
- 	debugLog("init physics native library v1.9.9.2.3 controller update 3");
+ 	debugLog("init physics native library v1.9.9.2.4 controller update 3");
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MAJOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_MINOR).c_str());
 	debugLog(std::to_string(PX_PHYSICS_VERSION_BUGFIX).c_str());
