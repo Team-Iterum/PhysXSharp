@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 if (UNIX AND NOT APPLE)
 	set(LINUX TRUE)
-	set(LINUX_AARCH64 TRUE)
+	set(LINUX_AARCH64 FALSE)
 	message(STATUS ">>> Linux")
 endif(UNIX AND NOT APPLE)
 
