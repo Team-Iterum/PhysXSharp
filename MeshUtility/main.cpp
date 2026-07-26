@@ -21,10 +21,10 @@ void processFile(const fs::path& meshDataName, const std::string& basePath) {
 
     while (getline(file, str))
     {
-        if (str.length() == 0) continue;
+        if (str.length() < 3) continue;
 
         // skip comments
-        if (str.substr(2) == "//") continue;
+        if (str.compare(0, 2, "//") == 0) continue;
 
         // vertex
         if (str.at(0) == 'v')
@@ -48,9 +48,16 @@ void processFile(const fs::path& meshDataName, const std::string& basePath) {
 
     const string finalPath = basePath + separator() + string("Mesh") + separator() + meshDataName.filename().replace_extension(".mesh").string();
 
+    if (indices->size() % 3 != 0)
+    {
+        cout << finalPath << " SKIPPED: " << to_string(indices->size()) << " indices is not a whole number of triangles" << endl;
+        return;
+    }
+
     cout << finalPath << " vertCount: " << to_string(vertices->size()) << " indCount: " << to_string(indices->size()) << endl;
 
-    createTriangleMesh(finalPath.c_str(), vertices->data(), vertices->size(), indices->data(), indices->size());
+    // triangles.count is triangles, not indices — passing the index count made PhysX read 3x past the buffer
+    createTriangleMesh(finalPath.c_str(), vertices->data(), vertices->size(), indices->data(), indices->size() / 3);
 
 
     cout << endl;
