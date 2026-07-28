@@ -55,6 +55,9 @@ endif (MSVC OR APPLE)
 
 add_executable (MeshUtility "main.cpp" "main.h")
 
+# shipped as Tools/Mesh/Mesh.exe in the game repos
+set_target_properties (MeshUtility PROPERTIES OUTPUT_NAME "Mesh")
+
 if (LINUX)
 	target_link_libraries(MeshUtility libPhysXSharpNative.so)
 endif(LINUX)
